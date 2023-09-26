@@ -2,21 +2,37 @@
 # Word1 is to (option11 option12 option13) as word2 is to (option21 option22 option23).
 from nltk.corpus import wordnet as wn
 import random
+from typing import Dict
+import json
 
 class XIsToYMaker:
-    def __init__(self, length_limit = 7):
+    def __init__(self, length_limit: int = 8):
         self.wn = wn
         self.words_in_wn = list(set(i for i in wn.words()))
         self.wn_length = len(self.words_in_wn)
         self.length_limit = length_limit
     
     # note, random words will lean towards very obscure words, some form of filtering or starting word set that is narrowed and more common
-    def get_random_word(self):
+    def get_random_word(self) -> str:
         random_index = random.randrange(0, self.wn_length)
         random_word = self.words_in_wn[random_index]
         return random_word
+    
+    def _get_and_save_simple_words(self, num_words: int = 5000000):
+        # method to get lots of words and save the ones that are below certain length or simplicity (look into methods for readability of single word?)
+        word_list = []
+        for word in range(num_words):
+            random_word = self.get_random_word()
+            if len(random_word) <= self.length_limit:
+                word_list.append(random_word)
+        data_to_write = {f"words_under_{self.length_limit}" : word_list}
+        with open('word_info.json', 'w') as f:
+            json.dump(data_to_write, f)
+        print(len(word_list))
+        # TODO: read in existing data and append to same num of words or add new key
+        return word_list
 
-    def get_synsets(self, word):
+    def get_synsets(self, word: str):
         synset = wn.synsets(word)
         num_synsets = len(synset)
         return synset, num_synsets # note will have variable number of synsets for different words
@@ -35,6 +51,32 @@ class XIsToYMaker:
         word = self.get_word_from_synset(synset)
         synonyms = wn.synonyms(word)
         return synonyms
+
+    def get_random_word_from_file(self) -> str:
+        # TODO: get based on max len key if available
+        word_file = open("word_info.json")
+        word_info = json.load(word_file)
+        word_list = word_info.get(f"words_under_{self.length_limit}")
+        random_word = random.choice(word_list)
+        return random_word
+        # TODO: else create some?
+
+    def create_synonym_question(self) -> Dict:
+        # create first pair with target relation based on random word
+        start_word = self.get_random_word_from_file()
+        
+        synsets, num_synsets = self.get_synsets(start_word)
+        synset = synsets[0]
+        start_word_pair = self.get_synonyms(synset)
+        # get another pair with the same relation
+
+        # TODO: validation/try again if:
+        # one word starts with the other/has same root
+        # multiple words (underscore between)
+        # scientific e.g. starts with genus_
+
+        # get more options which don't have this relation
+        return {"first_pair": [start_word, start_word_pair]}
 
     def get_antonyms(self, lemma):
         # word = self.get_word_from_synset(synset)
@@ -73,6 +115,7 @@ if __name__ == "__main__":
     print(maker.get_synsets(word))
     synsets, num_synsets = maker.get_synsets(word)
     synset = synsets[0]
+    print(f'SYNSET: {synset}')
     lemma = maker.get_lemma_from_synset(synset)
     # print(dir(lemma))
     print(f'Synonyms: {maker.get_synonyms(synset)}')
@@ -81,3 +124,5 @@ if __name__ == "__main__":
     print(f'Meronyms: {maker.get_meronyms(lemma)}')
     print(f'Holonyms: {maker.get_holonyms(synset)}')
     print(f'Entailments: {maker.get_entailments(lemma)}')
+    print(maker.create_synonym_question())
+    # maker._get_and_save_simple_words()
