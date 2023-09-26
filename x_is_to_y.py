@@ -2,8 +2,11 @@
 # Word1 is to (option11 option12 option13) as word2 is to (option21 option22 option23).
 from nltk.corpus import wordnet as wn
 import random
-from typing import Dict
+from typing import Dict, List
 import json
+from itertools import chain
+from nltk.stem import *
+from nltk.stem.porter import *
 
 class XIsToYMaker:
     def __init__(self, length_limit: int = 8):
@@ -61,6 +64,18 @@ class XIsToYMaker:
         return random_word
         # TODO: else create some?
 
+    def _validate_related_words(self, word1: str, related: List[List[str]]) -> List[any]:
+        related_chained = chain.from_iterable(related)
+        stemmer = PorterStemmer()
+        for word in related_chained:
+            # exclude words with same stem e.g. don't want look and looked as synonyms
+            if not stemmer.stem(word) == stemmer.stem(word1):
+                if not "_" in word:
+                    # TODO: more validation e.g. scientific e.g. starts with genus_ but mostly covered by underscore exclusion?
+                    return [True, word]
+        return [False, ""]
+
+
     def create_synonym_question(self) -> Dict:
         # create first pair with target relation based on random word
         start_word = self.get_random_word_from_file()
@@ -68,15 +83,18 @@ class XIsToYMaker:
         synsets, num_synsets = self.get_synsets(start_word)
         synset = synsets[0]
         start_word_pair = self.get_synonyms(synset)
+        validate_bool, validated_word = self._validate_related_words(start_word, start_word_pair)
+        # try again from scratch if no valid synonyms
+        if not validate_bool:
+            # TODO: causing errors as returning none
+            self.create_synonym_question()
         # get another pair with the same relation
 
-        # TODO: validation/try again if:
-        # one word starts with the other/has same root
-        # multiple words (underscore between)
-        # scientific e.g. starts with genus_
-
-        # get more options which don't have this relation
-        return {"first_pair": [start_word, start_word_pair]}
+        
+        # get more options which don't have this relation 
+        # maybe make them the same part of speech or something similar to not be random
+        else:
+            return {"first_pair": [start_word, validated_word]}
 
     def get_antonyms(self, lemma):
         # word = self.get_word_from_synset(synset)
