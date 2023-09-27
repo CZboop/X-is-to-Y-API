@@ -1,5 +1,3 @@
-# Question format:
-# Word1 is to (option11 option12 option13) as word2 is to (option21 option22 option23).
 from nltk.corpus import wordnet as wn
 import random
 from typing import Dict, List
@@ -14,6 +12,7 @@ class XIsToYMaker:
         self.words_in_wn = list(set(i for i in wn.words()))
         self.wn_length = len(self.words_in_wn)
         self.length_limit = length_limit
+        self.stemmer = PorterStemmer()
     
     # note, random words will lean towards very obscure words, some form of filtering or starting word set that is narrowed and more common
     def get_random_word(self) -> str:
@@ -26,7 +25,7 @@ class XIsToYMaker:
         word_list = []
         for word in range(num_words):
             random_word = self.get_random_word()
-            if len(random_word) <= self.length_limit:
+            if len(random_word) <= self.length_limit and "_" not in random_word and random_word.isalpha():
                 word_list.append(random_word)
         data_to_write = {f"words_under_{self.length_limit}" : word_list}
         with open('word_info.json', 'w') as f:
@@ -66,11 +65,11 @@ class XIsToYMaker:
 
     def _validate_related_words(self, word1: str, related: List[List[str]]) -> List[any]:
         related_chained = chain.from_iterable(related)
-        stemmer = PorterStemmer()
+
         for word in related_chained:
             # exclude words with same stem e.g. don't want look and looked as synonyms
-            if not stemmer.stem(word) == stemmer.stem(word1):
-                if not "_" in word:
+            if self.stemmer.stem(word) != self.stemmer.stem(word1):
+                if not "_" in word and len(word) > 0 and word.isalpha() == True:
                     # TODO: more validation e.g. scientific e.g. starts with genus_ but mostly covered by underscore exclusion?
                     return [True, word]
         return [False, ""]
@@ -85,16 +84,40 @@ class XIsToYMaker:
         start_word_pair = self.get_synonyms(synset)
         validate_bool, validated_word = self._validate_related_words(start_word, start_word_pair)
         # try again from scratch if no valid synonyms
-        if not validate_bool:
-            # TODO: causing errors as returning none
-            self.create_synonym_question()
+        while not validate_bool:
+            # TODO: causing errors as returning none?
+            return self.create_synonym_question()
         # get another pair with the same relation
-
+        second_pair_start_word = self.get_random_word_from_file()
         
-        # get more options which don't have this relation 
-        # maybe make them the same part of speech or something similar to not be random
+        second_synsets, second_num_synsets = self.get_synsets(second_pair_start_word)
+        second_synset = second_synsets[0]
+        second_start_word_pair = self.get_synonyms(second_synset)
+        all_synonyms_second_pair = chain.from_iterable(second_start_word_pair)
+        second_pair_validate_bool, second_pair_validated_word = self._validate_related_words(second_pair_start_word, second_start_word_pair)
+        # TODO: quite a lot returning empty string/not bypassing properly if not validated!
+        if not validate_bool:
+            # TODO: causing errors as returning none?
+            return self.create_synonym_question()
+        # TODO: validate all of the words against each other once got all of them esp not the same stem
+
         else:
-            return {"first_pair": [start_word, validated_word]}
+            # get more options which don't have this relation 
+            # TODO: adjustable number of other options?
+            unrelated_words = []
+            while len(unrelated_words) < 3:
+                word = self.get_random_word_from_file()
+                # check not the same stem, and only one word
+                # TODO: here and in general, the stem check not excluding what expected
+                if self.stemmer.stem(word) != self.stemmer.stem(second_pair_validated_word) and self.stemmer.stem(word) != self.stemmer.stem(second_pair_start_word) and "_" not in word and len(word) > 0:
+                    if word not in all_synonyms_second_pair: # check not also a synonym
+                        unrelated_words.append(word)
+
+            options = unrelated_words
+            options.append(second_pair_validated_word)
+            random.shuffle(options)
+            # maybe make them the same part of speech or something similar to not be random
+            return {"first_pair": [start_word, validated_word], "second_word": second_pair_start_word, "options": options, "correct_answer": second_pair_validated_word}
 
     def get_antonyms(self, lemma):
         # word = self.get_word_from_synset(synset)
@@ -142,5 +165,5 @@ if __name__ == "__main__":
     print(f'Meronyms: {maker.get_meronyms(lemma)}')
     print(f'Holonyms: {maker.get_holonyms(synset)}')
     print(f'Entailments: {maker.get_entailments(lemma)}')
-    print(maker.create_synonym_question())
-    # maker._get_and_save_simple_words()
+    # print(maker.create_synonym_question())
+    maker._get_and_save_simple_words()
