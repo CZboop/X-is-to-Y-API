@@ -15,3 +15,9 @@ def get_random_question() -> Dict:
     # TODO: have mutiple questions for multiple types of word relation, have this pick them randomly and other endpoints for each relation
     result = question_maker.create_synonym_question()
     return result
+
+@app.get("/synonym")
+def get_synonym_question() -> Dict:
+    # TODO: have mutiple questions for multiple types of word relation, have this pick them randomly and other endpoints for each relation
+    result = question_maker.create_synonym_question()
+    return result

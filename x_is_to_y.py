@@ -5,6 +5,7 @@ import json
 from itertools import chain
 from nltk.stem import *
 from nltk.stem.porter import *
+from fuzzywuzzy import fuzz
 
 class XIsToYMaker:
     def __init__(self, length_limit: int = 8):
@@ -13,6 +14,9 @@ class XIsToYMaker:
         self.wn_length = len(self.words_in_wn)
         self.length_limit = length_limit
         self.stemmer = PorterStemmer()
+
+    def _get_fuzz_score(self, word1: str, word2: str) -> int:
+        return fuzz.partial_ratio(word1, word2)
     
     # note, random words will lean towards very obscure words, some form of filtering or starting word set that is narrowed and more common
     def get_random_word(self) -> str:
@@ -63,43 +67,39 @@ class XIsToYMaker:
         return random_word
         # TODO: else create some?
 
-    def _validate_related_words(self, word1: str, related: List[List[str]]) -> List[any]:
-        related_chained = chain.from_iterable(related)
-
+    def _validate_related_words(self, word1: str, related: List[str]) -> List[any]:
+        related_chained = list(chain.from_iterable(related))
+        print(related_chained)
+        valid_words = []
         for word in related_chained:
             # exclude words with same stem e.g. don't want look and looked as synonyms
-            if self.stemmer.stem(word) != self.stemmer.stem(word1):
+            if self.stemmer.stem(word) != self.stemmer.stem(word1) and self._get_fuzz_score(word, word1) <= 95:
                 if not "_" in word and len(word) > 0 and word.isalpha() == True:
-                    # TODO: more validation e.g. scientific e.g. starts with genus_ but mostly covered by underscore exclusion?
-                    return [True, word]
-        return [False, ""]
-
+                    # TODO: more validation e.g. remove scientific e.g. starts with genus_ but mostly covered by underscore exclusion?
+                    valid_words.append(word)
+        if len(valid_words) > 0:
+            random_valid_word = random.choice(valid_words)
+            return [True, random_valid_word]
+        else: return [False, ""]
 
     def create_synonym_question(self) -> Dict:
         # create first pair with target relation based on random word
         start_word = self.get_random_word_from_file()
         
         synsets, num_synsets = self.get_synsets(start_word)
-        synset = synsets[0]
-        start_word_pair = self.get_synonyms(synset)
-        validate_bool, validated_word = self._validate_related_words(start_word, start_word_pair)
-        # try again from scratch if no valid synonyms
-        while not validate_bool:
-            # TODO: causing errors as returning none?
-            return self.create_synonym_question()
-        # get another pair with the same relation
+        
+        all_synonyms_start_word = list(chain.from_iterable([ self.get_synonyms(synset) for synset in synsets ]))
+        
+        validate_bool, validated_word = self._validate_related_words(start_word, all_synonyms_start_word)
+        # will later try again from scratch if no valid synonyms, refactor to reduce compute?
         second_pair_start_word = self.get_random_word_from_file()
         
         second_synsets, second_num_synsets = self.get_synsets(second_pair_start_word)
-        second_synset = second_synsets[0]
-        second_start_word_pair = self.get_synonyms(second_synset)
-        all_synonyms_second_pair = chain.from_iterable(second_start_word_pair)
-        second_pair_validate_bool, second_pair_validated_word = self._validate_related_words(second_pair_start_word, second_start_word_pair)
-        # TODO: quite a lot returning empty string/not bypassing properly if not validated!
-        if not validate_bool:
-            # TODO: causing errors as returning none?
+        all_synonyms_second_word = list(chain.from_iterable([ self.get_synonyms(synset) for synset in second_synsets ]))
+        second_pair_validate_bool, second_pair_validated_word = self._validate_related_words(second_pair_start_word, all_synonyms_second_word)
+        
+        if not second_pair_validate_bool or not validate_bool:
             return self.create_synonym_question()
-        # TODO: validate all of the words against each other once got all of them esp not the same stem
 
         else:
             # get more options which don't have this relation 
@@ -107,16 +107,15 @@ class XIsToYMaker:
             unrelated_words = []
             while len(unrelated_words) < 3:
                 word = self.get_random_word_from_file()
-                # check not the same stem, and only one word
-                # TODO: here and in general, the stem check not excluding what expected
-                if self.stemmer.stem(word) != self.stemmer.stem(second_pair_validated_word) and self.stemmer.stem(word) != self.stemmer.stem(second_pair_start_word) and "_" not in word and len(word) > 0:
-                    if word not in all_synonyms_second_pair: # check not also a synonym
+                # check not the same stem, and only one word, and not high partial fuzzymatch
+                if self.stemmer.stem(word) != self.stemmer.stem(second_pair_validated_word) and self.stemmer.stem(word) != self.stemmer.stem(second_pair_start_word) and "_" not in word and len(word) > 0 and self._get_fuzz_score(word, second_pair_start_word) <= 95 :
+                    if word not in all_synonyms_second_word: # check not also a synonym
                         unrelated_words.append(word)
 
             options = unrelated_words
             options.append(second_pair_validated_word)
             random.shuffle(options)
-            # maybe make them the same part of speech or something similar to not be random
+
             return {"first_pair": [start_word, validated_word], "second_word": second_pair_start_word, "options": options, "correct_answer": second_pair_validated_word}
 
     def get_antonyms(self, lemma):
