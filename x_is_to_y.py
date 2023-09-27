@@ -67,8 +67,11 @@ class XIsToYMaker:
         return random_word
         # TODO: else create some?
 
-    def _validate_related_words(self, word1: str, related: List[str]) -> List[any]:
-        related_chained = list(chain.from_iterable(related))
+    def _validate_related_words(self, word1: str, related: List[List[str]]) -> List[any]:
+        if len(related) > 0 and type(related[0]) == list:
+            related_chained = list(chain.from_iterable(related))
+        else:
+            related_chained = related
         print(related_chained)
         valid_words = []
         for word in related_chained:
@@ -120,8 +123,46 @@ class XIsToYMaker:
 
     def get_antonyms(self, lemma):
         # word = self.get_word_from_synset(synset)
-        antonyms = lemma.antonyms()
+        antonyms = [ str(antonym.name()) for antonym in lemma.antonyms() ]
         return antonyms
+
+    def create_antonym_question(self) -> Dict:
+        # create first pair with target relation based on random word
+        start_word = self.get_random_word_from_file()
+        
+        synsets, num_synsets = self.get_synsets(start_word)
+        lemmas = [self.get_lemma_from_synset(synset) for synset in synsets]
+        # print(lemmas)
+        all_antonyms_start_word = list(chain.from_iterable([ self.get_antonyms(lemma) for lemma in lemmas ]))
+        print(f"ANTONYMS: {all_antonyms_start_word}")
+        validate_bool, validated_word = self._validate_related_words(start_word, all_antonyms_start_word)
+        # will later try again from scratch if no valid antonyms, refactor to reduce compute?
+        second_pair_start_word = self.get_random_word_from_file()
+        
+        second_synsets, second_num_synsets = self.get_synsets(second_pair_start_word)
+        second_lemmas = [self.get_lemma_from_synset(synset) for synset in second_synsets]
+        all_antonyms_second_word = list(chain.from_iterable([ self.get_antonyms(lemma) for lemma in second_lemmas ]))
+        second_pair_validate_bool, second_pair_validated_word = self._validate_related_words(second_pair_start_word, all_antonyms_second_word)
+        
+        if not second_pair_validate_bool or not validate_bool:
+            return self.create_antonym_question()
+
+        else:
+            # get more options which don't have this relation 
+            # TODO: adjustable number of other options?
+            unrelated_words = []
+            while len(unrelated_words) < 3:
+                word = self.get_random_word_from_file()
+                # check not the same stem, and only one word, and not high partial fuzzymatch
+                if self.stemmer.stem(word) != self.stemmer.stem(second_pair_validated_word) and self.stemmer.stem(word) != self.stemmer.stem(second_pair_start_word) and "_" not in word and len(word) > 0 and self._get_fuzz_score(word, second_pair_start_word) <= 95 :
+                    if word not in all_antonyms_second_word: # check not also a synonym
+                        unrelated_words.append(word)
+            # TODO: this fails really often i.e. need to try dozens of times to get one, add some more logic in getting words to speed that up/have antonyms ready?
+            options = unrelated_words
+            options.append(second_pair_validated_word)
+            random.shuffle(options)
+
+            return {"first_pair": [start_word, validated_word], "second_word": second_pair_start_word, "options": options, "correct_answer": second_pair_validated_word}
 
     def get_hyponyms(self, lemma):
         # word = self.get_word_from_synset(synset)
