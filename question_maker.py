@@ -7,18 +7,16 @@ from nltk.stem import *
 from nltk.stem.porter import *
 from fuzzywuzzy import fuzz
 import pandas as pd
+from utils import Utils
 
 # CREATING QUESTIONS BASED ON SAVED WORD RELATIONS. CALLED FROM API #
 
 class QuestionMaker:
     def __init__(self, length_limit: int = 1, options_num: int = 3):
-        self.wn = wn
-        self.words_in_wn = list(set(i for i in wn.words()))
-        self.wn_length = len(self.words_in_wn)
+        self.utils = Utils()
         self.length_limit = length_limit
         self.options_num = options_num
-        self.stemmer = PorterStemmer()
-
+        
     def call_named_method(self, name: str):
         # NOTE: currently does not support passing any args to the method being called
         return getattr(self, name)()
@@ -39,10 +37,6 @@ class QuestionMaker:
         word_df = pd.read_csv("word_details.csv")
         random_word = str(word_df["word"].sample(n=1).iloc[0]) #random select from series
         return random_word
-
-    def _validate_related_words(self, word1: str, related: List[List[str]]) -> List[any]:
-        # TODO: refactor to be used in the saving of words into file
-        pass
 
     def create_synonym_question(self) -> Dict:
         # create first pair with target relation based on random word
@@ -69,7 +63,6 @@ class QuestionMaker:
         return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
 
     def get_antonyms(self, lemma):
-        # word = self.get_word_from_synset(synset)
         antonyms = [ str(antonym.name()) for antonym in lemma.antonyms() ]
         return antonyms
 
@@ -123,13 +116,11 @@ class QuestionMaker:
         return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
     
     def get_meronyms(self, lemma):
-        # word = self.get_word_from_synset(synset)
         part_meronyms = lemma.part_meronyms()
         member_meronyms = lemma.member_meronyms()
         return part_meronyms + member_meronyms
 
     def get_holonyms(self, lemma):
-        # word = self.get_word_from_synset(synset)
         part_holonyms = lemma.part_holonyms()
         member_holonyms = lemma.member_holonyms()
         return part_holonyms + member_holonyms
@@ -158,27 +149,3 @@ class QuestionMaker:
         random.shuffle(options)
 
         return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
-
-    # TODO: relations to try adding (BASED ON ATTRS) also_sees, attributes?, in_topic_domains, in_usage_domains, partainyms, similar_tos, verb_groups: ONCE WORD GET LOGIC IRONED OUT...
-
-    # TODO/NOTE: there are more relations possible in the synset, could potentially add some,
-    # (can get attrs with dir(lemma) ):
-if __name__ == "__main__":
-    maker = QuestionMaker()
-    # word = maker.get_random_word()
-    # print(word)
-    
-    print(maker.get_synsets(word))
-    synsets, num_synsets = maker.get_synsets(word)
-    synset = synsets[0]
-    print(f'SYNSET: {synset}')
-    lemma = maker.get_lemmas_from_synset(synset)
-    # print(dir(lemma))
-    print(f'Synonyms: {maker.get_synonyms(synset)}')
-    print(f'Antonyms: {maker.get_antonyms(lemma)}')
-    print(f'Hyponyms: {maker.get_hyponyms(lemma)}')
-    print(f'Meronyms: {maker.get_meronyms(lemma)}')
-    print(f'Holonyms: {maker.get_holonyms(synset)}')
-    print(f'Entailments: {maker.get_entailments(lemma)}')
-    # print(maker.create_synonym_question())
-    maker._get_and_save_words()
