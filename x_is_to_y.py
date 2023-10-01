@@ -15,6 +15,9 @@ class XIsToYMaker:
         self.length_limit = length_limit
         self.stemmer = PorterStemmer()
 
+    def call_named_method(self, name: str):
+        return getattr(self, name)()
+
     def _get_fuzz_score(self, word1: str, word2: str) -> int:
         return fuzz.partial_ratio(word1, word2)
     
@@ -92,7 +95,7 @@ class XIsToYMaker:
         synsets, num_synsets = self.get_synsets(start_word)
         
         all_synonyms_start_word = list(chain.from_iterable([ self.get_synonyms(synset) for synset in synsets ]))
-        
+        # TODO: make the types passed in to the below method consistent, and remove the type conversion from the method itself...
         validate_bool, validated_word = self._validate_related_words(start_word, all_synonyms_start_word)
         # will later try again from scratch if no valid synonyms, refactor to reduce compute?
         second_pair_start_word = self.get_random_word_from_file()
@@ -168,6 +171,44 @@ class XIsToYMaker:
         # word = self.get_word_from_synset(synset)
         hyponyms = lemma.hyponyms()
         return hyponyms
+
+    def create_hyponym_question(self):
+        # create first pair with target relation based on random word
+        start_word = self.get_random_word_from_file()
+        
+        synsets, num_synsets = self.get_synsets(start_word)
+        lemmas = [self.get_lemma_from_synset(synset) for synset in synsets]
+        # print(lemmas)
+        all_hyponyms_start_word = list(chain.from_iterable([ self.get_hyponyms(lemma) for lemma in lemmas ]))
+        print(f"HYPONYMS: {all_hyponyms_start_word}")
+        validate_bool, validated_word = self._validate_related_words(start_word, all_hyponyms_start_word)
+        # will later try again from scratch if no valid hyponyms, refactor to reduce compute?
+        second_pair_start_word = self.get_random_word_from_file()
+        
+        second_synsets, second_num_synsets = self.get_synsets(second_pair_start_word)
+        second_lemmas = [self.get_lemma_from_synset(synset) for synset in second_synsets]
+        all_hyponyms_second_word = list(chain.from_iterable([ self.get_hyponyms(lemma) for lemma in second_lemmas ]))
+        second_pair_validate_bool, second_pair_validated_word = self._validate_related_words(second_pair_start_word, all_hyponyms_second_word)
+        
+        if not second_pair_validate_bool or not validate_bool:
+            return self.create_hyponym_question()
+
+        else:
+            # get more options which don't have this relation 
+            # TODO: adjustable number of other options?
+            unrelated_words = []
+            while len(unrelated_words) < 3:
+                word = self.get_random_word_from_file()
+                # check not the same stem, and only one word, and not high partial fuzzymatch
+                if self.stemmer.stem(word) != self.stemmer.stem(second_pair_validated_word) and self.stemmer.stem(word) != self.stemmer.stem(second_pair_start_word) and "_" not in word and len(word) > 0 and self._get_fuzz_score(word, second_pair_start_word) <= 95 :
+                    if word not in all_hyponyms_second_word: # check not also a synonym
+                        unrelated_words.append(word)
+            # TODO: unusably slow - for hyponym needs to be made, stored and pulled rather than made at runtime/ combine with meronyms and holonyms?
+            options = unrelated_words
+            options.append(second_pair_validated_word)
+            random.shuffle(options)
+
+            return {"first_pair": [start_word, validated_word], "second_word": second_pair_start_word, "options": options, "correct_answer": second_pair_validated_word}
     
     def get_meronyms(self, lemma):
         # word = self.get_word_from_synset(synset)
@@ -186,6 +227,46 @@ class XIsToYMaker:
         entailments = lemma.entailments()
         return entailments
 
+    def create_entailment_question(self):
+        # create first pair with target relation based on random word
+        start_word = self.get_random_word_from_file()
+        
+        synsets, num_synsets = self.get_synsets(start_word)
+        lemmas = [self.get_lemma_from_synset(synset) for synset in synsets]
+        # print(lemmas)
+        all_entailments_start_word = list(chain.from_iterable([ self.get_entailments(lemma) for lemma in lemmas ]))
+        print(f"ENTAILMENTS: {all_entailments_start_word}")
+        validate_bool, validated_word = self._validate_related_words(start_word, all_entailments_start_word)
+        # will later try again from scratch if no valid entailments, refactor to reduce compute?
+        second_pair_start_word = self.get_random_word_from_file()
+        
+        second_synsets, second_num_synsets = self.get_synsets(second_pair_start_word)
+        second_lemmas = [self.get_lemma_from_synset(synset) for synset in second_synsets]
+        all_entailments_second_word = list(chain.from_iterable([ self.get_entailments(lemma) for lemma in second_lemmas ]))
+        second_pair_validate_bool, second_pair_validated_word = self._validate_related_words(second_pair_start_word, all_entailments_second_word)
+        
+        if not second_pair_validate_bool or not validate_bool:
+            return self.create_entailment_question()
+
+        else:
+            # get more options which don't have this relation 
+            # TODO: adjustable number of other options?
+            unrelated_words = []
+            while len(unrelated_words) < 3:
+                word = self.get_random_word_from_file()
+                # check not the same stem, and only one word, and not high partial fuzzymatch
+                if self.stemmer.stem(word) != self.stemmer.stem(second_pair_validated_word) and self.stemmer.stem(word) != self.stemmer.stem(second_pair_start_word) and "_" not in word and len(word) > 0 and self._get_fuzz_score(word, second_pair_start_word) <= 95 :
+                    if word not in all_entailments_second_word: # check not also a synonym
+                        unrelated_words.append(word)
+            # TODO: again unusably slow for making at runtime, needs diff method when saving words add some info, load into df and select?
+            options = unrelated_words
+            options.append(second_pair_validated_word)
+            random.shuffle(options)
+
+            return {"first_pair": [start_word, validated_word], "second_word": second_pair_start_word, "options": options, "correct_answer": second_pair_validated_word}
+
+    # TODO: relations to try adding (BASED ON ATTRS) also_sees, attributes?, in_topic_domains, in_usage_domains, partainyms, similar_tos, verb_groups:
+
     # TODO/NOTE: there are more relations possible in the synset, could potentially add these/some: 
     # for reference the attributes of a lemma are (cen get with dir(lemma) ):
     # ['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__slots__', '__str__', '__subclasshook__', '__weakref__', '_frame_ids', '_frame_strings', '_hypernyms', '_instance_hypernyms', '_key', '_lang', '_lex_id', '_lexname_index', '_name', '_related', '_synset', '_syntactic_marker', '_wordnet_corpus_reader', 'also_sees', 'antonyms', 'attributes', 'causes', 'count', 'derivationally_related_forms', 'entailments', 'frame_ids', 'frame_strings', 'hypernyms', 'hyponyms', 'in_region_domains', 'in_topic_domains', 'in_usage_domains', 'instance_hypernyms', 'instance_hyponyms', 'key', 'lang', 'member_holonyms', 'member_meronyms', 'name', 'part_holonyms', 'part_meronyms', 'pertainyms', 'region_domains', 'similar_tos', 'substance_holonyms', 'substance_meronyms', 'synset', 'syntactic_marker', 'topic_domains', 'usage_domains', 'verb_groups']
@@ -193,6 +274,7 @@ if __name__ == "__main__":
     maker = XIsToYMaker()
     word = maker.get_random_word()
     print(word)
+    
     print(maker.get_synsets(word))
     synsets, num_synsets = maker.get_synsets(word)
     synset = synsets[0]
