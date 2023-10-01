@@ -20,14 +20,15 @@ logging.basicConfig(
 # RUN FROM TERMINAL BEFORE API/AT STARTUP IF NOT PRESENT #
 
 class RelationWriter:
-    def __init__(self, length_limit: int = 12, save_path: str = "word_details.csv"):
+    def __init__(self, length_limit: int = 12, save_path: str = "word_details.csv", num_words: int = 100000):
         self.utils = Utils()
         self.length_limit = length_limit
         self.save_path = save_path
+        self.num_words = num_words
 
-    def _get_and_save_words(self, num_words: int = 100000) -> pd.DataFrame:
+    def _get_and_save_words(self) -> pd.DataFrame:
         word_list = []
-        for word in range(num_words):
+        for word in range(self.num_words):
             random_word = self.utils.get_random_word()
             if len(random_word) <= self.length_limit and "_" not in random_word and random_word.isalpha():
                 
@@ -43,7 +44,7 @@ class RelationWriter:
                 word_hyponyms = list(chain.from_iterable([ self.get_hyponyms(lemma) for lemma in word_lemmas ]))
                 validated_hyponyms = " ".join(self.utils._validate_related_words(random_word, word_hyponyms))
 
-                word_meronyms = list(chain.from_iterable([ self.get_meronyms(lemma) for lemma in word_lemmas ]))
+                word_meronyms = list(chain.from_iterable(self.get_meronyms(word_synsets)))
                 validated_meronyms = " ".join(self.utils._validate_related_words(random_word, word_meronyms))
 
                 word_holonyms = list(chain.from_iterable(self.get_holonyms(word_synsets)))
@@ -81,12 +82,14 @@ class RelationWriter:
         hyponyms = lemma.hyponyms()
         return hyponyms
     
-    def get_meronyms(self, lemma: nltk.corpus.reader.wordnet.Lemma):
-        part_meronyms = lemma.part_meronyms()
-        member_meronyms = lemma.member_meronyms()
-        return part_meronyms + member_meronyms
+    def get_meronyms(self, synsets: List[nltk.corpus.reader.wordnet.Synset]):
+        part_meronyms = [synset.part_meronyms() for synset in synsets]
+        member_meronyms = [synset.member_meronyms() for synset in synsets]
+        all_meronyms = part_meronyms + member_meronyms
+        meronym_words = [self.utils.get_words_from_synsets(synset) for synset in all_meronyms]
+        return meronym_words
 
-    def get_holonyms(self, synsets: nltk.corpus.reader.wordnet.Synset):
+    def get_holonyms(self, synsets: List[nltk.corpus.reader.wordnet.Synset]):
         part_holonyms = [synset.part_holonyms() for synset in synsets]
         member_holonyms = [synset.member_holonyms() for synset in synsets]
         all_holonyms = part_holonyms + member_holonyms
@@ -101,6 +104,6 @@ class RelationWriter:
         self._get_and_save_words()
 
 if __name__ == "__main__":
-    # relation_writer = RelationWriter(save_path = "test.csv")
+    # relation_writer = RelationWriter(save_path = "test.csv", num_words = 1000)
     relation_writer = RelationWriter()
     synset = relation_writer.run()

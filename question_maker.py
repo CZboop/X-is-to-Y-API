@@ -114,11 +114,30 @@ class QuestionMaker:
         random.shuffle(options)
 
         return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
-    
-    def get_meronyms(self, lemma):
-        part_meronyms = lemma.part_meronyms()
-        member_meronyms = lemma.member_meronyms()
-        return part_meronyms + member_meronyms
+
+    def create_meronym_question(self):
+        start_word_row = self.get_random_word_with_relation("meronyms")
+        start_pair1 = start_word_row["word"].values[0]
+        start_pair_meronyms = start_word_row["meronyms"].values[0].split(" ")
+        start_pair2 = random.choice(start_pair_meronyms)
+
+        second_word_row = self.get_random_word_with_relation("meronyms")
+        second_pair1 = second_word_row["word"].values[0]
+        second_pair_meronyms = second_word_row["meronyms"].values[0].split(" ")
+        second_pair2 = random.choice(second_pair_meronyms)
+        # TODO: make sure the two pairs don't overlap here?
+
+        unrelated_words = []
+        while len(unrelated_words) < self.options_num:
+            random_word = self.get_random_word()
+            if random_word not in start_pair_meronyms and random_word not in second_pair_meronyms:
+                unrelated_words.append(random_word)
+
+        options = unrelated_words
+        options.append(second_pair2)
+        random.shuffle(options)
+
+        return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
 
     def create_holonym_question(self):
         start_word_row = self.get_random_word_with_relation("holonyms")
