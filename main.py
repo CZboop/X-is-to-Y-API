@@ -11,10 +11,6 @@ app = FastAPI(
 
 question_maker = QuestionMaker()
 
-@app.get("/")
-async def root() -> Dict:
-    return {"Home": "Nothing here"}
-
 @app.get("/random")
 async def get_random_question() -> Dict:
     # NOTE: dynamically calling method based on random choice, relies on method names being same format, could update to pick from full method name?
