@@ -120,10 +120,29 @@ class QuestionMaker:
         member_meronyms = lemma.member_meronyms()
         return part_meronyms + member_meronyms
 
-    def get_holonyms(self, lemma):
-        part_holonyms = lemma.part_holonyms()
-        member_holonyms = lemma.member_holonyms()
-        return part_holonyms + member_holonyms
+    def create_holonym_question(self):
+        start_word_row = self.get_random_word_with_relation("holonyms")
+        start_pair1 = start_word_row["word"].values[0]
+        start_pair_holonyms = start_word_row["holonyms"].values[0].split(" ")
+        start_pair2 = random.choice(start_pair_holonyms)
+
+        second_word_row = self.get_random_word_with_relation("holonyms")
+        second_pair1 = second_word_row["word"].values[0]
+        second_pair_holonyms = second_word_row["holonyms"].values[0].split(" ")
+        second_pair2 = random.choice(second_pair_holonyms)
+        # TODO: make sure the two pairs don't overlap here?
+
+        unrelated_words = []
+        while len(unrelated_words) < self.options_num:
+            random_word = self.get_random_word()
+            if random_word not in start_pair_holonyms and random_word not in second_pair_holonyms:
+                unrelated_words.append(random_word)
+
+        options = unrelated_words
+        options.append(second_pair2)
+        random.shuffle(options)
+
+        return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
 
     def create_entailment_question(self):
         # TODO: seems none found in file, check if logic issue and/or handle here if not found

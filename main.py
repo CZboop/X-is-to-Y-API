@@ -14,7 +14,7 @@ question_maker = QuestionMaker()
 @app.get("/random")
 async def get_random_question() -> Dict:
     # NOTE: dynamically calling method based on random choice, relies on method names being same format, could update to pick from full method name?
-    question_types = ["synonym", "antonym", 
+    question_types = ["synonym", "antonym", "holonym",
     # "hyponym", "entailment"
     ]
     random_question_type = random.choice(question_types)
@@ -30,6 +30,11 @@ async def get_synonym_question() -> Dict:
 @app.get("/antonym")
 async def get_antonym_question() -> Dict:
     result = question_maker.create_antonym_question()
+    return result
+
+@app.get("/holonym")
+def get_holonym_question() -> Dict:
+    result = question_maker.create_holonym_question()
     return result
 
 # NOTE: commengint out as currently not finding any words with these relations

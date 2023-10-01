@@ -25,7 +25,7 @@ class RelationWriter:
         self.length_limit = length_limit
         self.save_path = save_path
 
-    def _get_and_save_words(self, num_words: int = 5000) -> pd.DataFrame:
+    def _get_and_save_words(self, num_words: int = 100000) -> pd.DataFrame:
         word_list = []
         for word in range(num_words):
             random_word = self.utils.get_random_word()
@@ -101,5 +101,6 @@ class RelationWriter:
         self._get_and_save_words()
 
 if __name__ == "__main__":
-    relation_writer = RelationWriter(save_path = "test.csv")
+    # relation_writer = RelationWriter(save_path = "test.csv")
+    relation_writer = RelationWriter()
     synset = relation_writer.run()
