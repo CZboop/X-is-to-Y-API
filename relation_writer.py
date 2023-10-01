@@ -20,7 +20,7 @@ class RelationWriter:
         self.stemmer = PorterStemmer()
     
     def _get_fuzz_score(self, word1: str, word2: str) -> int:
-        return fuzz.partial_ratio(word1, word2)
+        return fuzz.ratio(word1, word2)
     
     # NOTE: random words will lean towards very obscure words, some form of filtering or starting word set that is narrowed and more common
     def get_random_word(self) -> str:
@@ -28,7 +28,7 @@ class RelationWriter:
         random_word = self.words_in_wn[random_index]
         return random_word
     
-    def _get_and_save_words(self, num_words: int = 5000):
+    def _get_and_save_words(self, num_words: int = 25000):
         # method to get lots of words and save the ones that are below certain length or simplicity (look into methods for readability of single word?)
         word_list = []
         # TODO: get info and for each word append a list to word_list, then make df passing in column names

@@ -27,27 +27,6 @@ class QuestionMaker:
     def _get_fuzz_score(self, word1: str, word2: str) -> int:
         return fuzz.partial_ratio(word1, word2)
 
-    def get_synsets(self, word: str):
-        synset = wn.synsets(word)
-        num_synsets = len(synset)
-        return synset, num_synsets # note will have variable number of synsets for different words
-
-    def get_word_from_synset(self, synset):
-        # TODO: could do some shuffling of lemmas?
-        word = str(synset.lemmas()[0].name())
-        return word
-    
-    def get_lemmas_from_synset(self, synset):
-        # TODO: refactor now that returning all lemmas not just first
-        lemmas = synset.lemmas()
-        return lemmas
-
-    # TODO: get synonyms, antonyms, hyponym, meronym (larger or smaller of given category), troponym (way of doing the thing), entailment (x entails y, prerequisite/one implies another)
-    def get_synonyms(self, synset):
-        word = self.get_word_from_synset(synset)
-        synonyms = wn.synonyms(word)
-        return synonyms
-
     # TODO: update type hints, here def and elsewhere
     def get_random_word_with_relation(self, relation: str) -> str:
         word_df = pd.read_csv("word_details.csv")
@@ -63,22 +42,7 @@ class QuestionMaker:
 
     def _validate_related_words(self, word1: str, related: List[List[str]]) -> List[any]:
         # TODO: refactor to be used in the saving of words into file
-        if len(related) > 0 and type(related[0]) == list:
-            related_chained = list(chain.from_iterable(related))
-        else:
-            related_chained = related
-        print(related_chained)
-        valid_words = []
-        for word in related_chained:
-            # exclude words with same stem e.g. don't want look and looked as synonyms
-            if self.stemmer.stem(word) != self.stemmer.stem(word1) and self._get_fuzz_score(word, word1) <= 95:
-                if not "_" in word and len(word) > 0 and word.isalpha() == True:
-                    # TODO: more validation e.g. remove scientific e.g. starts with genus_ but mostly covered by underscore exclusion?
-                    valid_words.append(word)
-        if len(valid_words) > 0:
-            random_valid_word = random.choice(valid_words)
-            return [True, random_valid_word]
-        else: return [False, ""]
+        pass
 
     def create_synonym_question(self) -> Dict:
         # create first pair with target relation based on random word
@@ -110,85 +74,53 @@ class QuestionMaker:
         return antonyms
 
     def create_antonym_question(self) -> Dict:
-        # create first pair with target relation based on random word
-        start_word = self.get_random_word_from_file()
-        
-        synsets, num_synsets = self.get_synsets(start_word)
-        lemmas = [self.get_lemmas_from_synset(synset) for synset in synsets]
-        # print(lemmas)
-        all_antonyms_start_word = list(chain.from_iterable([ self.get_antonyms(lemma) for lemma in lemmas ]))
-        print(f"ANTONYMS: {all_antonyms_start_word}")
-        validate_bool, validated_word = self._validate_related_words(start_word, all_antonyms_start_word)
-        # will later try again from scratch if no valid antonyms, refactor to reduce compute?
-        second_pair_start_word = self.get_random_word_from_file()
-        
-        second_synsets, second_num_synsets = self.get_synsets(second_pair_start_word)
-        second_lemmas = [self.get_lemmas_from_synset(synset) for synset in second_synsets]
-        all_antonyms_second_word = list(chain.from_iterable([ self.get_antonyms(lemma) for lemma in second_lemmas ]))
-        second_pair_validate_bool, second_pair_validated_word = self._validate_related_words(second_pair_start_word, all_antonyms_second_word)
-        
-        if not second_pair_validate_bool or not validate_bool:
-            return self.create_antonym_question()
+        start_word_row = self.get_random_word_with_relation("antonyms")
+        start_pair1 = start_word_row["word"].values[0]
+        start_pair_antonyms = start_word_row["antonyms"].values[0].split(" ")
+        start_pair2 = random.choice(start_pair_antonyms)
 
-        else:
-            # get more options which don't have this relation 
-            # TODO: adjustable number of other options?
-            unrelated_words = []
-            while len(unrelated_words) < 3:
-                word = self.get_random_word_from_file()
-                # check not the same stem, and only one word, and not high partial fuzzymatch
-                if self.stemmer.stem(word) != self.stemmer.stem(second_pair_validated_word) and self.stemmer.stem(word) != self.stemmer.stem(second_pair_start_word) and "_" not in word and len(word) > 0 and self._get_fuzz_score(word, second_pair_start_word) <= 95 :
-                    if word not in all_antonyms_second_word: # check not also a synonym
-                        unrelated_words.append(word)
-            # TODO: this fails really often i.e. need to try dozens of times to get one, add some more logic in getting words to speed that up/have antonyms ready?
-            options = unrelated_words
-            options.append(second_pair_validated_word)
-            random.shuffle(options)
+        second_word_row = self.get_random_word_with_relation("antonyms")
+        second_pair1 = second_word_row["word"].values[0]
+        second_pair_antonyms = second_word_row["antonyms"].values[0].split(" ")
+        second_pair2 = random.choice(second_pair_antonyms)
+        # TODO: make sure the two pairs don't overlap here?
 
-            return {"first_pair": [start_word, validated_word], "second_word": second_pair_start_word, "options": options, "correct_answer": second_pair_validated_word}
+        unrelated_words = []
+        while len(unrelated_words) < self.options_num:
+            random_word = self.get_random_word()
+            if random_word not in start_pair_antonyms and random_word not in second_pair_antonyms:
+                unrelated_words.append(random_word)
 
-    def get_hyponyms(self, lemma):
-        # word = self.get_word_from_synset(synset)
-        hyponyms = lemma.hyponyms()
-        return hyponyms
+        options = unrelated_words
+        options.append(second_pair2)
+        random.shuffle(options)
+
+        return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
 
     def create_hyponym_question(self):
-        # create first pair with target relation based on random word
-        start_word = self.get_random_word_from_file()
-        
-        synsets, num_synsets = self.get_synsets(start_word)
-        lemmas = [self.get_lemmas_from_synset(synset) for synset in synsets]
-        # print(lemmas)
-        all_hyponyms_start_word = list(chain.from_iterable([ self.get_hyponyms(lemma) for lemma in lemmas ]))
-        print(f"HYPONYMS: {all_hyponyms_start_word}")
-        validate_bool, validated_word = self._validate_related_words(start_word, all_hyponyms_start_word)
-        # will later try again from scratch if no valid hyponyms, refactor to reduce compute?
-        second_pair_start_word = self.get_random_word_from_file()
-        
-        second_synsets, second_num_synsets = self.get_synsets(second_pair_start_word)
-        second_lemmas = [self.get_lemmas_from_synset(synset) for synset in second_synsets]
-        all_hyponyms_second_word = list(chain.from_iterable([ self.get_hyponyms(lemma) for lemma in second_lemmas ]))
-        second_pair_validate_bool, second_pair_validated_word = self._validate_related_words(second_pair_start_word, all_hyponyms_second_word)
-        
-        if not second_pair_validate_bool or not validate_bool:
-            return self.create_hyponym_question()
+        # TODO: seems none found in file, check if logic issue and/or handle here if not found
+        start_word_row = self.get_random_word_with_relation("hyponyms")
+        start_pair1 = start_word_row["word"].values[0]
+        start_pair_hyponyms = start_word_row["hyponyms"].values[0].split(" ")
+        start_pair2 = random.choice(start_pair_hyponyms)
 
-        else:
-            # get more options which don't have this relation 
-            # TODO: adjustable number of other options?
-            unrelated_words = []
-            while len(unrelated_words) < 3:
-                word = self.get_random_word_from_file()
-                # check not the same stem, and only one word, and not high partial fuzzymatch
-                if self.stemmer.stem(word) != self.stemmer.stem(second_pair_validated_word) and self.stemmer.stem(word) != self.stemmer.stem(second_pair_start_word) and "_" not in word and len(word) > 0 and self._get_fuzz_score(word, second_pair_start_word) <= 95 :
-                    if word not in all_hyponyms_second_word: # check not also a synonym
-                        unrelated_words.append(word)
-            # TODO: unusably slow - for hyponym needs to be made, stored and pulled rather than made at runtime/ combine with meronyms and holonyms?
-            options = unrelated_words
-            options.append(second_pair_validated_word)
-            random.shuffle(options)
+        second_word_row = self.get_random_word_with_relation("hyponyms")
+        second_pair1 = second_word_row["word"].values[0]
+        second_pair_hyponyms = second_word_row["hyponyms"].values[0].split(" ")
+        second_pair2 = random.choice(second_pair_hyponyms)
+        # TODO: make sure the two pairs don't overlap here?
 
-            return {"first_pair": [start_word, validated_word], "second_word": second_pair_start_word, "options": options, "correct_answer": second_pair_validated_word}
+        unrelated_words = []
+        while len(unrelated_words) < self.options_num:
+            random_word = self.get_random_word()
+            if random_word not in start_pair_hyponyms and random_word not in second_pair_hyponyms:
+                unrelated_words.append(random_word)
+
+        options = unrelated_words
+        options.append(second_pair2)
+        random.shuffle(options)
+
+        return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
     
     def get_meronyms(self, lemma):
         # word = self.get_word_from_synset(synset)
@@ -201,49 +133,31 @@ class QuestionMaker:
         part_holonyms = lemma.part_holonyms()
         member_holonyms = lemma.member_holonyms()
         return part_holonyms + member_holonyms
-    
-    def get_entailments(self, lemma):
-        # word = self.get_word_from_synset(synset)
-        entailments = lemma.entailments()
-        return entailments
 
     def create_entailment_question(self):
-        # create first pair with target relation based on random word
-        start_word = self.get_random_word_from_file()
-        
-        synsets, num_synsets = self.get_synsets(start_word)
-        lemmas = [self.get_lemmas_from_synset(synset) for synset in synsets]
-        # print(lemmas)
-        all_entailments_start_word = list(chain.from_iterable([ self.get_entailments(lemma) for lemma in lemmas ]))
-        print(f"ENTAILMENTS: {all_entailments_start_word}")
-        validate_bool, validated_word = self._validate_related_words(start_word, all_entailments_start_word)
-        # will later try again from scratch if no valid entailments, refactor to reduce compute?
-        second_pair_start_word = self.get_random_word_from_file()
-        
-        second_synsets, second_num_synsets = self.get_synsets(second_pair_start_word)
-        second_lemmas = [self.get_lemmas_from_synset(synset) for synset in second_synsets]
-        all_entailments_second_word = list(chain.from_iterable([ self.get_entailments(lemma) for lemma in second_lemmas ]))
-        second_pair_validate_bool, second_pair_validated_word = self._validate_related_words(second_pair_start_word, all_entailments_second_word)
-        
-        if not second_pair_validate_bool or not validate_bool:
-            return self.create_entailment_question()
+        # TODO: seems none found in file, check if logic issue and/or handle here if not found
+        start_word_row = self.get_random_word_with_relation("entailments")
+        start_pair1 = start_word_row["word"].values[0]
+        start_pair_entailments = start_word_row["entailments"].values[0].split(" ")
+        start_pair2 = random.choice(start_pair_entailments)
 
-        else:
-            # get more options which don't have this relation 
-            # TODO: adjustable number of other options?
-            unrelated_words = []
-            while len(unrelated_words) < 3:
-                word = self.get_random_word_from_file()
-                # check not the same stem, and only one word, and not high partial fuzzymatch
-                if self.stemmer.stem(word) != self.stemmer.stem(second_pair_validated_word) and self.stemmer.stem(word) != self.stemmer.stem(second_pair_start_word) and "_" not in word and len(word) > 0 and self._get_fuzz_score(word, second_pair_start_word) <= 95 :
-                    if word not in all_entailments_second_word: # check not also a synonym
-                        unrelated_words.append(word)
-            # TODO: again unusably slow for making at runtime, needs diff method when saving words add some info, load into df and select?
-            options = unrelated_words
-            options.append(second_pair_validated_word)
-            random.shuffle(options)
+        second_word_row = self.get_random_word_with_relation("entailments")
+        second_pair1 = second_word_row["word"].values[0]
+        second_pair_entailments = second_word_row["entailments"].values[0].split(" ")
+        second_pair2 = random.choice(second_pair_entailments)
+        # TODO: make sure the two pairs don't overlap here?
 
-            return {"first_pair": [start_word, validated_word], "second_word": second_pair_start_word, "options": options, "correct_answer": second_pair_validated_word}
+        unrelated_words = []
+        while len(unrelated_words) < self.options_num:
+            random_word = self.get_random_word()
+            if random_word not in start_pair_entailments and random_word not in second_pair_entailments:
+                unrelated_words.append(random_word)
+
+        options = unrelated_words
+        options.append(second_pair2)
+        random.shuffle(options)
+
+        return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
 
     # TODO: relations to try adding (BASED ON ATTRS) also_sees, attributes?, in_topic_domains, in_usage_domains, partainyms, similar_tos, verb_groups: ONCE WORD GET LOGIC IRONED OUT...
 
