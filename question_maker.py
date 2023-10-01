@@ -51,17 +51,14 @@ class QuestionMaker:
     # TODO: update type hints, here def and elsewhere
     def get_random_word_with_relation(self, relation: str) -> str:
         word_df = pd.read_csv("word_details.csv")
-        # TODO: later have max len used here?
-        word_df['word'] = word_df['word'].astype('str')
-        filter_mask = len(word_df[relation]) > 0 # or is there a better null check?
-        
-        words_with_len_and_relation = word_df.loc[filter_mask]
+        # TODO: later have max len used here?        
+        words_with_len_and_relation = word_df.loc[word_df[relation].notnull()]
         random_word_row = words_with_len_and_relation.sample(n=1) #random select from df slice
         return random_word_row
         
     def get_random_word(self) -> str:
         word_df = pd.read_csv("word_details.csv")
-        random_word = word_df["word"].sample(n=1) #random select from series
+        random_word = str(word_df["word"].sample(n=1).iloc[0]) #random select from series
         return random_word
 
     def _validate_related_words(self, word1: str, related: List[List[str]]) -> List[any]:
@@ -86,13 +83,13 @@ class QuestionMaker:
     def create_synonym_question(self) -> Dict:
         # create first pair with target relation based on random word
         start_word_row = self.get_random_word_with_relation("synonyms")
-        start_pair1 = start_word_row["word"]
-        start_pair_synonyms = start_word_row["synonyms"] # TODO: proper list and select
+        start_pair1 = start_word_row["word"].values[0]
+        start_pair_synonyms = start_word_row["synonyms"].values[0].split(" ")
         start_pair2 = random.choice(start_pair_synonyms)
 
         second_word_row = self.get_random_word_with_relation("synonyms")
-        second_pair1 = second_word_row["word"]
-        second_pair_synonyms = second_word_row["synonyms"] # TODO: proper list and select
+        second_pair1 = second_word_row["word"].values[0]
+        second_pair_synonyms = second_word_row["synonyms"].values[0].split(" ")
         second_pair2 = random.choice(second_pair_synonyms)
 
         unrelated_words = []
@@ -105,7 +102,7 @@ class QuestionMaker:
         options.append(second_pair2)
         random.shuffle(options)
 
-        return {"first_pair": [start_pair1, start_pair1], "second_word": second_pair1, "options": options, "correct_answer": second_pair2}
+        return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
 
     def get_antonyms(self, lemma):
         # word = self.get_word_from_synset(synset)
