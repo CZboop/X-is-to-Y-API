@@ -41,7 +41,7 @@ class RelationWriter:
                 word_antonyms = list(chain.from_iterable([ self.get_antonyms(lemma) for lemma in word_lemmas ]))
                 validated_antonyms = " ".join(self.utils._validate_related_words(random_word, word_antonyms))
 
-                word_hyponyms = list(chain.from_iterable([ self.get_hyponyms(lemma) for lemma in word_lemmas ]))
+                word_hyponyms = list(chain.from_iterable(self.get_hyponyms(word_synsets)))
                 validated_hyponyms = " ".join(self.utils._validate_related_words(random_word, word_hyponyms))
 
                 word_meronyms = list(chain.from_iterable(self.get_meronyms(word_synsets)))
@@ -50,7 +50,7 @@ class RelationWriter:
                 word_holonyms = list(chain.from_iterable(self.get_holonyms(word_synsets)))
                 validated_holonyms = " ".join(self.utils._validate_related_words(random_word, word_holonyms))
 
-                word_entailments = list(chain.from_iterable([ self.get_entailments(lemma) for lemma in word_lemmas ]))
+                word_entailments = list(chain.from_iterable(self.get_entailments(word_synsets)))
                 validated_entailments = " ".join(self.utils._validate_related_words(random_word, word_entailments))
                 
                 word_details = [random_word, validated_synonyms, validated_antonyms, validated_hyponyms, validated_meronyms, validated_holonyms, validated_entailments]
@@ -78,9 +78,10 @@ class RelationWriter:
         antonyms = [ str(antonym.name()) for antonym in lemma.antonyms() ]
         return antonyms
 
-    def get_hyponyms(self, lemma: nltk.corpus.reader.wordnet.Lemma):
-        hyponyms = lemma.hyponyms()
-        return hyponyms
+    def get_hyponyms(self, synsets: List[nltk.corpus.reader.wordnet.Synset]):
+        hyponyms = [synset.hyponyms() for synset in synsets]
+        hyponym_words = [self.utils.get_words_from_synsets(synset) for synset in hyponyms]
+        return hyponym_words
     
     def get_meronyms(self, synsets: List[nltk.corpus.reader.wordnet.Synset]):
         part_meronyms = [synset.part_meronyms() for synset in synsets]
@@ -96,9 +97,10 @@ class RelationWriter:
         holonym_words = [self.utils.get_words_from_synsets(synset) for synset in all_holonyms]
         return holonym_words
     
-    def get_entailments(self, lemma: nltk.corpus.reader.wordnet.Lemma):
-        entailments = lemma.entailments()
-        return entailments
+    def get_entailments(self, synsets: List[nltk.corpus.reader.wordnet.Synset]):
+        entailments = [synset.entailments() for synset in synsets]
+        entailments_words = [self.utils.get_words_from_synsets(synset) for synset in entailments]
+        return entailments_words
 
     def run(self):
         self._get_and_save_words()
