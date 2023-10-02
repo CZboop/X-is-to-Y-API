@@ -1,5 +1,5 @@
 import sqlalchemy as _sql
-import db as _db
+import database as _db
 
 class Word(_db.Base):
     __tablename__ = "words"
