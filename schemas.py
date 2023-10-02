@@ -13,7 +13,7 @@ class Word(_BaseWord):
     id: int 
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class CreateWord(_BaseWord):
     pass # pass to mean nothing extra other than base class it inherits from

@@ -9,6 +9,7 @@ from nltk.stem.porter import *
 from fuzzywuzzy import fuzz
 import pandas as pd
 from utils import Utils
+import services as _services
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -25,8 +26,46 @@ class RelationWriter:
         self.length_limit = length_limit
         self.save_path = save_path
         self.num_words = num_words
+    
+    def _get_and_save_words_to_db(self) -> List[Dict[str, str]]:
+        word_details_list = []
+        for word in range(self.num_words):
+            random_word = self.utils.get_random_word()
+            if len(random_word) <= self.length_limit and "_" not in random_word and random_word.isalpha():
+                
+                word_synsets, num_synsets = self.utils.get_synsets(random_word)
+                word_lemmas = list(chain.from_iterable([ self.utils.get_lemmas_from_synset(synset) for synset in word_synsets ]))
 
-    def _get_and_save_words(self) -> pd.DataFrame:
+                word_synonyms = self.get_synonyms(word_synsets)
+                validated_synonyms =  " ".join(self.utils._validate_related_words(random_word, word_synonyms))
+
+                word_antonyms = list(chain.from_iterable([ self.get_antonyms(lemma) for lemma in word_lemmas ]))
+                validated_antonyms = " ".join(self.utils._validate_related_words(random_word, word_antonyms))
+
+                word_hyponyms = list(chain.from_iterable(self.get_hyponyms(word_synsets)))
+                validated_hyponyms = " ".join(self.utils._validate_related_words(random_word, word_hyponyms))
+
+                word_meronyms = list(chain.from_iterable(self.get_meronyms(word_synsets)))
+                validated_meronyms = " ".join(self.utils._validate_related_words(random_word, word_meronyms))
+
+                word_holonyms = list(chain.from_iterable(self.get_holonyms(word_synsets)))
+                validated_holonyms = " ".join(self.utils._validate_related_words(random_word, word_holonyms))
+
+                word_entailments = list(chain.from_iterable(self.get_entailments(word_synsets)))
+                validated_entailments = " ".join(self.utils._validate_related_words(random_word, word_entailments))
+                
+                # setting dict with keys and values to match db columns to be passed to create func as kwargs
+                word_details = {"word_name": random_word, "synonyms": validated_synonyms, "antonyms": validated_antonyms, "hyponyms": validated_hyponyms, "meronyms": validated_meronyms, "holonyms": validated_holonyms, "entailments": validated_entailments}
+
+                # only save if there's something other than the original word
+                if any([len(category) > 0 for category in [validated_synonyms, validated_antonyms, validated_hyponyms, validated_meronyms, validated_holonyms, validated_entailments]]):
+                    _services.create_word(word_details)
+                    word_details_list.append(word_details)
+
+        # return list of the words that should match what added to db      
+        return word_details_list
+
+    def _get_and_save_words_to_csv(self) -> pd.DataFrame:
         word_list = []
         for word in range(self.num_words):
             random_word = self.utils.get_random_word()
@@ -102,10 +141,13 @@ class RelationWriter:
         entailments_words = [self.utils.get_words_from_synsets(synset) for synset in entailments]
         return entailments_words
 
-    def run(self):
-        self._get_and_save_words()
+    def run(self, save_method: str = "csv"):
+        if save_method == "csv":
+            self._get_and_save_words_to_csv()
+        else:
+            self._get_and_save_words_to_db()
 
 if __name__ == "__main__":
     # relation_writer = RelationWriter(save_path = "test.csv", num_words = 1000)
-    relation_writer = RelationWriter()
-    synset = relation_writer.run()
+    relation_writer = RelationWriter(num_words = 10)
+    relation_writer.run("db")

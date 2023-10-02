@@ -16,8 +16,10 @@ def get_db():
     finally:
         db.close()
 
-def create_word(word: _schemas.CreateWord, db: "Session") -> _schemas.Word:
-    word = _models.Word(**word.dict()) # pass in as kwargs dict and it will unpack
+def create_word(word: _schemas.CreateWord) -> _schemas.Word:
+    word = _models.Word(**word) # unpacking dict passed in as kwargs
+    db = _db.SessionLocal()
+
     db.add(word)
     db.commit()
     db.refresh(word)
