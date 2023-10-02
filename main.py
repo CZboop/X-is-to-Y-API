@@ -13,7 +13,7 @@ question_maker = QuestionMaker()
 
 @app.get("/random")
 async def get_random_question() -> Dict:
-    # NOTE: dynamically calling method based on random choice, relies on method names being same format, could update to pick from full method name?
+    # NOTE: dynamically calling method based on random choice, relies on method names being same format
     question_types = ["synonym", "antonym", "holonym", "meronym", "hyponym", "entailment",
     # 
     ]

@@ -62,10 +62,6 @@ class QuestionMaker:
 
         return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
 
-    def get_antonyms(self, lemma):
-        antonyms = [ str(antonym.name()) for antonym in lemma.antonyms() ]
-        return antonyms
-
     def create_antonym_question(self) -> Dict:
         start_word_row = self.get_random_word_with_relation("antonyms")
         start_pair1 = start_word_row["word"].values[0]
