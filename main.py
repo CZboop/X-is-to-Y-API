@@ -7,6 +7,7 @@ import services as _services
 from relation_writer import RelationWriter
 import psycopg2
 import logging
+from sqlalchemy_utils.functions import database_exists, create_database
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -17,34 +18,25 @@ logging.basicConfig(
 # startup function before allowing requests, setup and populate database
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Beginning API startup")
-    # create database itself
-    conn = psycopg2.connect(database="postgres", user='postgres', password='password', host='127.0.0.1', port= '5432')
-    conn.autocommit = True
-    cursor = conn.cursor()
-    logger.info("Connecting to Postgres")
-    
-    # drop existing db if one with this name
-    drop_db_query = "DROP DATABASE IF EXISTS xyapi_database;"
-    cursor.execute(drop_db_query)
-    logger.info("Dropped database if already found")
+    # checking if db exists
+    logger.info("Checking for database")
+    db_exists = database_exists("postgresql://postgres:password@localhost/xyapi_database")
+    if not db_exists:
+        logger.info("Database not found. Creating database...")
+        # create fresh db to populate if not exists
+        create_database('postgresql://postgres:password@localhost/xyapi_database')
 
-    # create fresh db to populate
-    create_db_query = "CREATE DATABASE xyapi_database;"
-    cursor.execute(create_db_query)
-    logger.info("Created new database 'xyapi_database'")
+        # create table based on word model
+        _services._setup_tables()
+        logger.info("Created table 'words' in database")
+        logger.info("Populating database. This will take a few minutes...")
 
-    conn.close()
-
-    # create table based on word model
-    _services._setup_tables()
-    logger.info("Created table 'words' in database")
-    logger.info("Populating database. This will take a few minutes...")
-
-    # populate table with word relations
-    relation_writer = RelationWriter(num_words = 200000)
-    relation_writer.run("db")
-    logger.info("Populated word relation database")
+        # populate table with word relations
+        relation_writer = RelationWriter(num_words = 100000)
+        relation_writer.run("db")
+        logger.info("Populated word relation database")
+    else:
+        logger.info("Database found")
     # yield at the end so this function only pre-startup, then main app will run
     logger.info("Starting API...")
     yield
