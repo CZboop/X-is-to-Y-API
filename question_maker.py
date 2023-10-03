@@ -73,20 +73,19 @@ class QuestionMaker:
         return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
 
     def create_antonym_question(self) -> Dict:
-        start_word_row = self.get_random_word_with_relation("antonyms")
-        start_pair1 = start_word_row["word"].values[0]
-        start_pair_antonyms = start_word_row["antonyms"].values[0].split(" ")
+        start_word_obj = self.get_random_word_with_relation_from_db("antonyms")
+        start_pair1 = start_word_obj.word_name
+        start_pair_antonyms = start_word_obj.antonyms.split(" ")
         start_pair2 = random.choice(start_pair_antonyms)
 
-        second_word_row = self.get_random_word_with_relation("antonyms")
-        second_pair1 = second_word_row["word"].values[0]
-        second_pair_antonyms = second_word_row["antonyms"].values[0].split(" ")
+        second_word_obj = self.get_random_word_with_relation_from_db("antonyms")
+        second_pair1 = second_word_obj.word_name
+        second_pair_antonyms = second_word_obj.antonyms.split(" ")
         second_pair2 = random.choice(second_pair_antonyms)
-        # TODO: make sure the two pairs don't overlap here?
 
         unrelated_words = []
         while len(unrelated_words) < self.options_num:
-            random_word = self.get_random_word()
+            random_word = self.get_random_word_from_db()
             if random_word not in start_pair_antonyms and random_word not in second_pair_antonyms:
                 unrelated_words.append(random_word)
 
@@ -97,20 +96,19 @@ class QuestionMaker:
         return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
 
     def create_hyponym_question(self):
-        start_word_row = self.get_random_word_with_relation("hyponyms")
-        start_pair1 = start_word_row["word"].values[0]
-        start_pair_hyponyms = start_word_row["hyponyms"].values[0].split(" ")
+        start_word_obj = self.get_random_word_with_relation_from_db("hyponyms")
+        start_pair1 = start_word_obj.word_name
+        start_pair_hyponyms = start_word_obj.hyponyms.split(" ")
         start_pair2 = random.choice(start_pair_hyponyms)
 
-        second_word_row = self.get_random_word_with_relation("hyponyms")
-        second_pair1 = second_word_row["word"].values[0]
-        second_pair_hyponyms = second_word_row["hyponyms"].values[0].split(" ")
+        second_word_obj = self.get_random_word_with_relation_from_db("hyponyms")
+        second_pair1 = second_word_obj.word_name
+        second_pair_hyponyms = second_word_obj.hyponyms.split(" ")
         second_pair2 = random.choice(second_pair_hyponyms)
-        # TODO: make sure the two pairs don't overlap here?
 
         unrelated_words = []
         while len(unrelated_words) < self.options_num:
-            random_word = self.get_random_word()
+            random_word = self.get_random_word_from_db()
             if random_word not in start_pair_hyponyms and random_word not in second_pair_hyponyms:
                 unrelated_words.append(random_word)
 
@@ -121,20 +119,19 @@ class QuestionMaker:
         return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
 
     def create_meronym_question(self):
-        start_word_row = self.get_random_word_with_relation("meronyms")
-        start_pair1 = start_word_row["word"].values[0]
-        start_pair_meronyms = start_word_row["meronyms"].values[0].split(" ")
+        start_word_obj = self.get_random_word_with_relation_from_db("meronyms")
+        start_pair1 = start_word_obj.word_name
+        start_pair_meronyms = start_word_obj.meronyms.split(" ")
         start_pair2 = random.choice(start_pair_meronyms)
 
-        second_word_row = self.get_random_word_with_relation("meronyms")
-        second_pair1 = second_word_row["word"].values[0]
-        second_pair_meronyms = second_word_row["meronyms"].values[0].split(" ")
+        second_word_obj = self.get_random_word_with_relation_from_db("meronyms")
+        second_pair1 = second_word_obj.word_name
+        second_pair_meronyms = second_word_obj.meronyms.split(" ")
         second_pair2 = random.choice(second_pair_meronyms)
-        # TODO: make sure the two pairs don't overlap here?
 
         unrelated_words = []
         while len(unrelated_words) < self.options_num:
-            random_word = self.get_random_word()
+            random_word = self.get_random_word_from_db()
             if random_word not in start_pair_meronyms and random_word not in second_pair_meronyms:
                 unrelated_words.append(random_word)
 
@@ -145,20 +142,19 @@ class QuestionMaker:
         return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
 
     def create_holonym_question(self):
-        start_word_row = self.get_random_word_with_relation("holonyms")
-        start_pair1 = start_word_row["word"].values[0]
-        start_pair_holonyms = start_word_row["holonyms"].values[0].split(" ")
+        start_word_obj = self.get_random_word_with_relation_from_db("holonyms")
+        start_pair1 = start_word_obj.word_name
+        start_pair_holonyms = start_word_obj.holonyms.split(" ")
         start_pair2 = random.choice(start_pair_holonyms)
 
-        second_word_row = self.get_random_word_with_relation("holonyms")
-        second_pair1 = second_word_row["word"].values[0]
-        second_pair_holonyms = second_word_row["holonyms"].values[0].split(" ")
+        second_word_obj = self.get_random_word_with_relation_from_db("holonyms")
+        second_pair1 = second_word_obj.word_name
+        second_pair_holonyms = second_word_obj.holonyms.split(" ")
         second_pair2 = random.choice(second_pair_holonyms)
-        # TODO: make sure the two pairs don't overlap here?
 
         unrelated_words = []
         while len(unrelated_words) < self.options_num:
-            random_word = self.get_random_word()
+            random_word = self.get_random_word_from_db()
             if random_word not in start_pair_holonyms and random_word not in second_pair_holonyms:
                 unrelated_words.append(random_word)
 
@@ -169,20 +165,19 @@ class QuestionMaker:
         return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
 
     def create_entailment_question(self):
-        start_word_row = self.get_random_word_with_relation("entailments")
-        start_pair1 = start_word_row["word"].values[0]
-        start_pair_entailments = start_word_row["entailments"].values[0].split(" ")
+        start_word_obj = self.get_random_word_with_relation_from_db("entailments")
+        start_pair1 = start_word_obj.word_name
+        start_pair_entailments = start_word_obj.entailments.split(" ")
         start_pair2 = random.choice(start_pair_entailments)
 
-        second_word_row = self.get_random_word_with_relation("entailments")
-        second_pair1 = second_word_row["word"].values[0]
-        second_pair_entailments = second_word_row["entailments"].values[0].split(" ")
+        second_word_obj = self.get_random_word_with_relation_from_db("entailments")
+        second_pair1 = second_word_obj.word_name
+        second_pair_entailments = second_word_obj.entailments.split(" ")
         second_pair2 = random.choice(second_pair_entailments)
-        # TODO: make sure the two pairs don't overlap here?
 
         unrelated_words = []
         while len(unrelated_words) < self.options_num:
-            random_word = self.get_random_word()
+            random_word = self.get_random_word_from_db()
             if random_word not in start_pair_entailments and random_word not in second_pair_entailments:
                 unrelated_words.append(random_word)
 
