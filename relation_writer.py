@@ -61,7 +61,7 @@ class RelationWriter:
                 if any([len(category) > 0 for category in [validated_synonyms, validated_antonyms, validated_hyponyms, validated_meronyms, validated_holonyms, validated_entailments]]):
                     _services.create_word(word_details)
                     word_details_list.append(word_details)
-
+        logger.info(f"Added {len(word_details_list)} words and their relations to database")
         # return list of the words that should match what added to db      
         return word_details_list
 

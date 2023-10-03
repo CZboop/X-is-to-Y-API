@@ -8,6 +8,8 @@ from nltk.stem.porter import *
 from fuzzywuzzy import fuzz
 import pandas as pd
 from utils import Utils
+import services as _services
+import models as _models
 
 # CREATING QUESTIONS BASED ON SAVED WORD RELATIONS. CALLED FROM API #
 
@@ -20,6 +22,14 @@ class QuestionMaker:
     def call_named_method(self, name: str):
         # NOTE: currently does not support passing any args to the method being called
         return getattr(self, name)()
+    
+    # NOTE: returning whole word obj, can then split the target column/attr and select one at random
+    def get_random_word_with_relation_from_db(self, relation: str) -> _models.Word:
+        return _services.get_word_with_given_relation(relation)
+    
+    # NOTE: here just need the word itself so not returning whole obj
+    def get_random_word_from_db(self) -> str:
+        return _services.get_random_word().word_name
 
     # TODO: refactor these type of methods into utils if using in multi files
     def _get_fuzz_score(self, word1: str, word2: str) -> int:
@@ -40,19 +50,19 @@ class QuestionMaker:
 
     def create_synonym_question(self) -> Dict:
         # create first pair with target relation based on random word
-        start_word_row = self.get_random_word_with_relation("synonyms")
-        start_pair1 = start_word_row["word"].values[0]
-        start_pair_synonyms = start_word_row["synonyms"].values[0].split(" ")
+        start_word_obj = self.get_random_word_with_relation_from_db("synonyms")
+        start_pair1 = start_word_obj.word_name
+        start_pair_synonyms = start_word_obj.synonyms.split(" ")
         start_pair2 = random.choice(start_pair_synonyms)
 
-        second_word_row = self.get_random_word_with_relation("synonyms")
-        second_pair1 = second_word_row["word"].values[0]
-        second_pair_synonyms = second_word_row["synonyms"].values[0].split(" ")
+        second_word_obj = self.get_random_word_with_relation_from_db("synonyms")
+        second_pair1 = second_word_obj.word_name
+        second_pair_synonyms = second_word_obj.synonyms.split(" ")
         second_pair2 = random.choice(second_pair_synonyms)
 
         unrelated_words = []
         while len(unrelated_words) < self.options_num:
-            random_word = self.get_random_word()
+            random_word = self.get_random_word_from_db()
             if random_word not in start_pair_synonyms and random_word not in second_pair_synonyms:
                 unrelated_words.append(random_word)
 
@@ -181,3 +191,7 @@ class QuestionMaker:
         random.shuffle(options)
 
         return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
+
+if __name__ == "__main__":
+    q_maker = QuestionMaker()
+    print(q_maker.get_random_word_with_relation_from_db("synonyms").word_name)
