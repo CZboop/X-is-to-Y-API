@@ -27,7 +27,7 @@ def create_word(word: _schemas.CreateWord) -> _schemas.Word:
     db.commit()
     db.refresh(word)
     db.close()
-    
+
     return _schemas.Word.from_orm(word)
 
 def get_word_with_given_relation(relation: str) -> _schemas.Word:
@@ -55,6 +55,3 @@ def get_all_words() -> List[_schemas.Word]:
     all_words = db.query(_models.Word).all()
     db.close()
     return all_words
-
-if __name__ == "__main__":
-    _setup_tables()

@@ -2,11 +2,58 @@ from fastapi import FastAPI
 from question_maker import QuestionMaker
 from typing import Dict
 import random
+from contextlib import asynccontextmanager
+import services as _services
+from relation_writer import RelationWriter
+import psycopg2
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level = logging.INFO,
+    format = "%(asctime)s: %(funcName)s: %(levelname)s: %(message)s"
+    )
+
+# startup function before allowing requests, setup and populate database
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Beginning API startup")
+    # create database itself
+    conn = psycopg2.connect(database="postgres", user='postgres', password='password', host='127.0.0.1', port= '5432')
+    conn.autocommit = True
+    cursor = conn.cursor()
+    logger.info("Connecting to Postgres")
+    
+    # drop existing db if one with this name
+    drop_db_query = "DROP DATABASE IF EXISTS xyapi_database;"
+    cursor.execute(drop_db_query)
+    logger.info("Dropped database if already found")
+
+    # create fresh db to populate
+    create_db_query = "CREATE DATABASE xyapi_database;"
+    cursor.execute(create_db_query)
+    logger.info("Created new database 'xyapi_database'")
+
+    conn.close()
+
+    # create table based on word model
+    _services._setup_tables()
+    logger.info("Created table 'words' in database")
+    logger.info("Populating database. This will take a few minutes...")
+
+    # populate table with word relations
+    relation_writer = RelationWriter(num_words = 200000)
+    relation_writer.run("db")
+    logger.info("Populated word relation database")
+    # yield at the end so this function only pre-startup, then main app will run
+    logger.info("Starting API...")
+    yield
 
 app = FastAPI(
     title = "X is to Y API",
     description = "Verbal reasoning questions finding pairs of words with the same relations",
-    version = "0.1.0"
+    version = "0.1.0",
+    lifespan = lifespan,
     )
 
 question_maker = QuestionMaker()
