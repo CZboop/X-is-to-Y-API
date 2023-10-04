@@ -1,5 +1,6 @@
-from nltk.corpus import wordnet as wn
 import nltk
+nltk.download('wordnet')
+from nltk.corpus import wordnet as wn
 import random
 from typing import Dict, List, Tuple
 import json
@@ -29,16 +30,16 @@ class Utils:
         num_synsets = len(synset)
         return synset, num_synsets # note will have variable number of synsets for different words
 
-    def get_words_from_synsets(self, synsets) -> List[str]:
+    def get_words_from_synsets(self, synsets: List[nltk.corpus.reader.wordnet.Synset]) -> List[str]:
         lemmas = list(chain.from_iterable([synset.lemmas() for synset in synsets]))
         words = list([str(item.name()) for item in lemmas])
         return words
     
-    def get_lemmas_from_synset(self, synset):
+    def get_lemmas_from_synset(self, synset: nltk.corpus.reader.wordnet.Synset) -> List[nltk.corpus.reader.wordnet.Lemma]:
         lemmas = synset.lemmas()
         return lemmas
 
-    def _validate_related_words(self, word1: str, related: List[List[str]]) -> List[any]:
+    def _validate_related_words(self, word1: str, related: List[str]) -> List[str]:
         valid_words = []
         for word in related:
             # exclude words with same stem e.g. don't want look and looked as synonyms

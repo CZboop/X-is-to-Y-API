@@ -3,8 +3,9 @@ from utils import Utils
 from pathlib import Path
 import os
 import shutil
-from nltk.corpus import wordnet as wn
 import nltk
+nltk.download('wordnet')
+from nltk.corpus import wordnet as wn
 
 class TestUtils(unittest.TestCase):
 
@@ -48,8 +49,30 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(type(actual_num_synsets) == int)
 
     # == TEST GET WORDS FROM SYNSETS == #
+    def test_get_words_from_synsets_returns_a_list_of_strings(self):
+        # given - an instance of the utils class
+        undertest_class = Utils()
+
+        # when - we call the get words from synsets method passing in a list of synsets
+        actual_synsets, _ = undertest_class.get_synsets("class")
+        actual_words = undertest_class.get_words_from_synsets(actual_synsets)
+
+        # then - a list of strings is returned
+        self.assertTrue(type(actual_words) == list)
+        self.assertTrue(all([type(i) == str for i in actual_words]))
 
     # == TEST GET LEMMAS FROM SYNSET == #
+    def test_get_lemmas_from_synset_returns_list_of_lemmas(self):
+        # given - an instance of the utils class
+        undertest_class = Utils()
+
+        # when - we call the get lemmas from synsets method passing in a synset
+        actual_synsets, _ = undertest_class.get_synsets("class")
+        actual_words = undertest_class.get_lemmas_from_synset(actual_synsets[0])
+
+        # then - a list of strings is returned
+        self.assertTrue(type(actual_words) == list)
+        self.assertTrue(all([type(i) == nltk.corpus.reader.wordnet.Lemma for i in actual_words]))
 
     # == TEST VALIDATE RELATED WORDS == #
 
