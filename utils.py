@@ -1,7 +1,7 @@
-# TODO: any reusable things in here if want to use across files
 from nltk.corpus import wordnet as wn
+import nltk
 import random
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import json
 from itertools import chain
 from nltk.stem import *
@@ -24,12 +24,12 @@ class Utils:
         random_word = self.words_in_wn[random_index]
         return random_word
     
-    def get_synsets(self, word: str):
+    def get_synsets(self, word: str) -> Tuple[List[nltk.corpus.reader.wordnet.Synset], int]:
         synset = wn.synsets(word)
         num_synsets = len(synset)
         return synset, num_synsets # note will have variable number of synsets for different words
 
-    def get_words_from_synsets(self, synsets):
+    def get_words_from_synsets(self, synsets) -> List[str]:
         lemmas = list(chain.from_iterable([synset.lemmas() for synset in synsets]))
         words = list([str(item.name()) for item in lemmas])
         return words

@@ -1,0 +1,1 @@
+# TODO: test can create an instance of the model in couple different ways e.g. dict and explicit

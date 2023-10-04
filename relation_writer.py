@@ -157,8 +157,3 @@ class RelationWriter:
             self._get_and_save_words_to_csv()
         else:
             self._get_and_save_words_to_db()
-
-if __name__ == "__main__":
-    # relation_writer = RelationWriter(save_path = "test.csv", num_words = 1000)
-    relation_writer = RelationWriter(num_words = 200000)
-    relation_writer.run("db")

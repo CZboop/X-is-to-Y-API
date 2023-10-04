@@ -186,7 +186,3 @@ class QuestionMaker:
         random.shuffle(options)
 
         return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
-
-if __name__ == "__main__":
-    q_maker = QuestionMaker()
-    print(q_maker.get_random_word_with_relation_from_db("synonyms").word_name)
