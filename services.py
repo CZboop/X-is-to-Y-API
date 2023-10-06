@@ -1,6 +1,6 @@
-import database as _db
-import models as _models
-import schemas as _schemas
+import db.database as _db
+import db.models as _models
+import db.schemas as _schemas
 from typing import TYPE_CHECKING, List
 from sqlalchemy.sql.expression import func, select
 import random

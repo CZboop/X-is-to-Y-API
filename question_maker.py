@@ -11,7 +11,7 @@ from fuzzywuzzy import fuzz
 import pandas as pd
 from utils import Utils
 import services as _services
-import models as _models
+import db.models as _models
 
 # CREATING QUESTIONS BASED ON SAVED WORD RELATIONS. CALLED FROM API #
 
