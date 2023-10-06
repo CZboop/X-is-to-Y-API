@@ -1,5 +1,5 @@
 import unittest, pytest
-from schemas import _BaseWord
+from db.schemas import _BaseWord
 
 class TestSchemas(unittest.TestCase):
 

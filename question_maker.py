@@ -13,20 +13,40 @@ from utils import Utils
 import services as _services
 import db.models as _models
 
-# CREATING QUESTIONS BASED ON SAVED WORD RELATIONS. CALLED FROM API #
+'''
+ CREATING QUESTIONS BASED ON SAVED WORD RELATIONS. METHODS CALLED FROM API.
+'''
 
 class QuestionMaker:
-    def __init__(self, length_limit: int = 1, options_num: int = 3):
+    def __init__(self, options_num: int = 3):
+        '''
+        Constructs an object of type QuestionMaker
+        Args:
+            options_num (int): The number of options to give with each question, excluding the correct answer
+        '''
         self.utils = Utils()
-        self.length_limit = length_limit
         self.options_num = options_num
         
     def call_named_method(self, name: str):
-        # NOTE: currently does not support passing any args to the method being called
+        '''
+        Calls the method passed in as an argument, which must be a method of the object calling it
+        Args:
+            name (str): Name of the method to be called
+        Returns:
+
+        '''
+        # NOTE: cannot pass any args to the method being called
         return getattr(self, name)()
     
     # NOTE: returning whole word obj, can then split the target column/attr and select one at random
     def get_random_word_with_relation_from_db(self, relation: str) -> _models.Word:
+        '''
+        Retrieves and returns a word from the database, which has words with the relation passed in
+        Args:
+
+        Returns:
+            word (_models.Word): 
+        '''
         return _services.get_word_with_given_relation(relation)
     
     # NOTE: here just need the word itself so not returning whole obj
