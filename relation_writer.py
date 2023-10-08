@@ -18,17 +18,40 @@ logging.basicConfig(
     format = "%(asctime)s: %(funcName)s: %(levelname)s: %(message)s"
     )
 
-# GET AND WRITE WORDS WITH COLUMNS OF WORDS BY TYPE OF RELATION, TO SAVE COMPUTE/RETRIES AT RUNTIME #
-# RUN FROM TERMINAL BEFORE API/AT STARTUP IF NOT PRESENT #
+'''
+GET AND WRITE WORDS WITH COLUMNS OF WORDS BY TYPE OF RELATION, TO SAVE COMPUTE/RETRIES AT RUNTIME #
+RUN FROM TERMINAL BEFORE API/AT STARTUP IF NOT PRESENT 
+'''
 
 class RelationWriter:
     def __init__(self, length_limit: int = 12, save_path: str = "word_details.csv", num_words: int = 100000):
+        '''
+        Constructs an object of type RelationWriter
+        Args:
+            length_limit (int): Maximum length of words to be analysed and stored
+            save_path (str): Save path for word details (only used for csv, not needed for database)
+            num_words (int): The total number of words to be evaluated, not all of these will be saved
+        '''
         self.utils = Utils()
         self.length_limit = length_limit
         self.save_path = save_path
         self.num_words = num_words
     
     def _get_and_save_words_to_db(self) -> List[Dict[str, str]]:
+        '''
+        Retrieves words from WordNet, evaluates them, compiles related words and stores in the database if appropriate. Returns a list of the word details saved
+        Returns:
+            word_details_list (List[Dict[str, str]): A list of the dicts used as kwargs to create word objects in the database. Dict format will be as below
+            {
+                "word_name": str (one word), 
+                "synonyms": str (space separated collection of words), 
+                "antonyms": str (space separated collection of words), 
+                "hyponyms": str (space separated collection of words),  
+                "meronyms": str (space separated collection of words), 
+                "holonyms": str (space separated collection of words), 
+                "entailments": str (space separated collection of words), 
+            }
+        '''
         word_details_list = []
         word_names_list = []
         for word in range(self.num_words):
@@ -78,6 +101,11 @@ class RelationWriter:
         return word_details_list
 
     def _get_and_save_words_to_csv(self) -> pd.DataFrame:
+        '''
+        Retrieves words from WordNet, evaluates them, compiles related words and stores as a csv if appropriate. Returns a Pandas DataFrame of the word details saved
+        Returns:
+            word_details_df (pd.DataFrame): Pandas DataFrame with the following columns - ["word", "synonyms", "antonyms", "hyponyms", "meronyms", "holonyms", "entailments"]
+        '''
         word_list = []
         for word in range(self.num_words):
             random_word = self.utils.get_random_word()
@@ -116,44 +144,90 @@ class RelationWriter:
 
         # save as csv and return in df format
         word_details_df.to_csv(self.save_path)
-        # TODO: read in existing data and append ?
         return word_details_df
 
-    def get_synonyms(self, synsets: List[nltk.corpus.reader.wordnet.Synset]):
+    def get_synonyms(self, synsets: List[nltk.corpus.reader.wordnet.Synset]) -> List[str]:
+        '''
+        Takes a list of WordNet synsets and returns all synonyms.
+        Args:
+            synsets (List[nltk.corpus.reader.wordnet.Synset]): All synsets of a word as returned by the wordnet.synsets() method
+        Returns:
+            synonyms_lowered_unique (List[str]): All unique synonyms of synsets passed in
+        '''
         words = self.utils.get_words_from_synsets(synsets)
         synonyms = list(chain.from_iterable(chain.from_iterable([wn.synonyms(word) for word in words])))
         synonyms_lowered_unique = list(set([word.lower() for word in synonyms]))
         return synonyms_lowered_unique
 
-    def get_antonyms(self, lemma: nltk.corpus.reader.wordnet.Lemma):
+    def get_antonyms(self, lemma: nltk.corpus.reader.wordnet.Lemma) -> List[str]:
+        '''
+        Takes a lemma and returns a list of its antonyms
+        Args:
+            lemma (nltk.corpus.reader.wordnet.Lemma): A WordNet lemma of the word whose antonyms are being found
+        Returns:
+            antonyms (List[str]): Antonyms of the lemma
+        '''
         antonyms = [ str(antonym.name()) for antonym in lemma.antonyms() ]
         return antonyms
 
-    def get_hyponyms(self, synsets: List[nltk.corpus.reader.wordnet.Synset]):
+    def get_hyponyms(self, synsets: List[nltk.corpus.reader.wordnet.Synset]) -> List[str]:
+        '''
+        Takes a list of synsets and returns a list of hyponyms
+        Args:
+            synsets (List[nltk.corpus.reader.wordnet.Synset]): All synsets of a word as returned by the wordnet.synsets() method
+        Returns:
+            hyponym_words (List[str]): A lits of all hyponyms from the synsets passed in as args
+        '''
         hyponyms = [synset.hyponyms() for synset in synsets]
         hyponym_words = [self.utils.get_words_from_synsets(synset) for synset in hyponyms]
         return hyponym_words
     
-    def get_meronyms(self, synsets: List[nltk.corpus.reader.wordnet.Synset]):
+    def get_meronyms(self, synsets: List[nltk.corpus.reader.wordnet.Synset]) -> List[str]:
+        '''
+        Takes a list of synsets and returns all member meronyms and part meronyms as one list of strings
+        Args:
+            synsets (List[nltk.corpus.reader.wordnet.Synset]): A list of synsets for the word whose meronyms we want to find
+        Returns:
+            meronym_words (List[str]): All member and part meronyms for the synsets from args
+        '''
         part_meronyms = [synset.part_meronyms() for synset in synsets]
         member_meronyms = [synset.member_meronyms() for synset in synsets]
         all_meronyms = part_meronyms + member_meronyms
         meronym_words = [self.utils.get_words_from_synsets(synset) for synset in all_meronyms]
         return meronym_words
 
-    def get_holonyms(self, synsets: List[nltk.corpus.reader.wordnet.Synset]):
+    def get_holonyms(self, synsets: List[nltk.corpus.reader.wordnet.Synset]) -> List[str]:
+        '''
+        Takes a list of synsets and returns all member holonyms and part holonyms as one list of strings
+        Args:
+            synsets (List[nltk.corpus.reader.wordnet.Synset]): A list of synsets for the word whose holonyms we want to find
+        Returns:
+            holonym_words (List[str]): All member and part holonyms for the synsets from args
+        '''
         part_holonyms = [synset.part_holonyms() for synset in synsets]
         member_holonyms = [synset.member_holonyms() for synset in synsets]
         all_holonyms = part_holonyms + member_holonyms
         holonym_words = [self.utils.get_words_from_synsets(synset) for synset in all_holonyms]
         return holonym_words
     
-    def get_entailments(self, synsets: List[nltk.corpus.reader.wordnet.Synset]):
+    def get_entailments(self, synsets: List[nltk.corpus.reader.wordnet.Synset]) -> List[str]:
+        '''
+        Takes a list of synsets and returns all entailments for those synsets
+        Args:
+            synsets (List[nltk.corpus.reader.wordnet.Synset]): A list of synsets for the word whose holonyms we want to find
+        Returns:
+            entailments_words (List[str]): All entailments for the synsets from args
+        '''
         entailments = [synset.entailments() for synset in synsets]
         entailments_words = [self.utils.get_words_from_synsets(synset) for synset in entailments]
         return entailments_words
 
     def run(self, save_method: str = "csv"):
+        '''
+        Takes a save method and creates word relations in csv or database format
+        Args:
+            save_method (str): Whether to save in csv or database format. Should be "csv" for csv or anything else for database
+        '''
         if save_method == "csv":
             self._get_and_save_words_to_csv()
         else:
