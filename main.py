@@ -75,11 +75,10 @@ async def get_random_question() -> Dict:
             "correct_answer": str
         }
     '''
-    question_types = ["synonym", "antonym", "holonym", "meronym", "hyponym", "entailment",
+    question_types = ["synonyms", "antonyms", "holonyms", "meronyms", "hyponyms", "entailments",
     ]
     random_question_type = random.choice(question_types)
-    # NOTE: dynamically calling method based on string of method name with random choice, relies on method names being same format
-    result = question_maker.call_named_method(f"create_{random_question_type}_question")
+    result = question_maker.create_question_with_named_relation(random_question_type)
     return result
 
 @app.get("/api/v1/synonym")
@@ -102,7 +101,7 @@ async def get_synonym_question() -> Dict:
             "correct_answer": str
         }
     '''
-    result = question_maker.create_synonym_question()
+    result = question_maker.create_question_with_named_relation("synonyms")
     return result
 
 @app.get("/api/v1/antonym")
@@ -125,7 +124,7 @@ async def get_antonym_question() -> Dict:
             "correct_answer": str
         }
     '''
-    result = question_maker.create_antonym_question()
+    result = question_maker.create_question_with_named_relation("antonyms")
     return result
 
 @app.get("/api/v1/holonym")
@@ -148,7 +147,7 @@ def get_holonym_question() -> Dict:
             "correct_answer": str
         }
     '''
-    result = question_maker.create_holonym_question()
+    result = question_maker.create_question_with_named_relation("holonyms")
     return result
 
 @app.get("/api/v1/meronym")
@@ -171,7 +170,7 @@ def get_meronym_question() -> Dict:
             "correct_answer": str
         }
     '''
-    result = question_maker.create_meronym_question()
+    result = question_maker.create_question_with_named_relation("meronyms")
     return result
 
 @app.get("/api/v1/hyponym")
@@ -194,7 +193,7 @@ def get_hyponym_question() -> Dict:
             "correct_answer": str
         }
     '''
-    result = question_maker.create_hyponym_question()
+    result = question_maker.create_question_with_named_relation("hyponyms")
     return result
 
 @app.get("/api/v1/entailment")
@@ -217,5 +216,5 @@ async def get_entailment_question() -> Dict:
             "correct_answer": str
         }
     '''
-    result = question_maker.create_entailment_question()
+    result = question_maker.create_question_with_named_relation("entailments")
     return result

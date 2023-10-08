@@ -33,174 +33,70 @@ class QuestionMaker:
         Args:
             name (str): Name of the method to be called
         Returns:
-
+            result (dict): The result of calling the named method
         '''
         # NOTE: cannot pass any args to the method being called
-        return getattr(self, name)()
+        try:
+            return getattr(self, name)()
+        except AttributeError:
+            raise AttributeError(f"No method found called '{name}' - try one of these: 'create_antonym_question', 'create_entailment_question', 'create_holonym_question', 'create_hyponym_question', 'create_meronym_question', 'create_synonym_question'")
     
     # NOTE: returning whole word obj, can then split the target column/attr and select one at random
     def get_random_word_with_relation_from_db(self, relation: str) -> _models.Word:
         '''
-        Retrieves and returns a word from the database, which has words with the relation passed in
+        Retrieves and returns a word object (including all related words) from the database, randomly selected from the words that have at least one word related in the way passed in to the method
         Args:
-
+            relation (str): The type of word relation that the returned word must have. Should match a column in the database
         Returns:
-            word (_models.Word): 
+            word (_models.Word): A random word that has one or more words of the type of relation passed in
         '''
         return _services.get_word_with_given_relation(relation)
     
-    # NOTE: here just need the word itself so not returning whole obj
     def get_random_word_from_db(self) -> str:
+        '''
+        Returns a completely random word (without any of its related words) from the database
+        Returns:
+            word (str): A single word as a string
+        '''
         return _services.get_random_word().word_name
 
-    # TODO: refactor these type of methods into utils if using in multi files
-    def _get_fuzz_score(self, word1: str, word2: str) -> int:
-        return fuzz.partial_ratio(word1, word2)
-
-    # TODO: update type hints, here def and elsewhere
-    def get_random_word_with_relation(self, relation: str) -> str:
-        word_df = pd.read_csv("word_details.csv")
-        # TODO: later have max len used here?        
-        words_with_len_and_relation = word_df.loc[word_df[relation].notnull()]
-        random_word_row = words_with_len_and_relation.sample(n=1) #random select from df slice
-        return random_word_row
-        
-    def get_random_word(self) -> str:
-        word_df = pd.read_csv("word_details.csv")
-        random_word = str(word_df["word"].sample(n=1).iloc[0]) #random select from series
-        return random_word
-
-    def create_synonym_question(self) -> Dict:
+    def create_question_with_named_relation(self, relation: str) -> Dict:
+        '''
+        Takes a string of a word relation type, returns a dict for a question using that type of word relation
+        Args:
+            relation (str): A type of word relation, should match the columns in the database (i.e. plural version of the relation)
+        Returns:
+            result (dict): A dict with the words that form the question, in the below format
+            {
+            "first_pair": [
+                str,
+                str
+            ],
+            "second_word": str,
+            "options": [
+                str,
+                str,
+                str,
+                str
+            ],
+            "correct_answer": str
+        }
+        '''
         # create first pair with target relation based on random word
-        start_word_obj = self.get_random_word_with_relation_from_db("synonyms")
+        start_word_obj = self.get_random_word_with_relation_from_db(relation)
         start_pair1 = start_word_obj.word_name
-        start_pair_synonyms = start_word_obj.synonyms.split(" ")
-        start_pair2 = random.choice(start_pair_synonyms)
+        start_pair_relateds = getattr(start_word_obj, relation).split(" ")
+        start_pair2 = random.choice(start_pair_relateds)
 
-        second_word_obj = self.get_random_word_with_relation_from_db("synonyms")
+        second_word_obj = self.get_random_word_with_relation_from_db(relation)
         second_pair1 = second_word_obj.word_name
-        second_pair_synonyms = second_word_obj.synonyms.split(" ")
-        second_pair2 = random.choice(second_pair_synonyms)
+        second_pair_relateds = getattr(second_word_obj, relation).split(" ")
+        second_pair2 = random.choice(second_pair_relateds)
 
         unrelated_words = []
         while len(unrelated_words) < self.options_num:
             random_word = self.get_random_word_from_db()
-            if random_word not in start_pair_synonyms and random_word not in second_pair_synonyms:
-                unrelated_words.append(random_word)
-
-        options = unrelated_words
-        options.append(second_pair2)
-        random.shuffle(options)
-
-        return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
-
-    def create_antonym_question(self) -> Dict:
-        start_word_obj = self.get_random_word_with_relation_from_db("antonyms")
-        start_pair1 = start_word_obj.word_name
-        start_pair_antonyms = start_word_obj.antonyms.split(" ")
-        start_pair2 = random.choice(start_pair_antonyms)
-
-        second_word_obj = self.get_random_word_with_relation_from_db("antonyms")
-        second_pair1 = second_word_obj.word_name
-        second_pair_antonyms = second_word_obj.antonyms.split(" ")
-        second_pair2 = random.choice(second_pair_antonyms)
-
-        unrelated_words = []
-        while len(unrelated_words) < self.options_num:
-            random_word = self.get_random_word_from_db()
-            if random_word not in start_pair_antonyms and random_word not in second_pair_antonyms:
-                unrelated_words.append(random_word)
-
-        options = unrelated_words
-        options.append(second_pair2)
-        random.shuffle(options)
-
-        return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
-
-    def create_hyponym_question(self):
-        start_word_obj = self.get_random_word_with_relation_from_db("hyponyms")
-        start_pair1 = start_word_obj.word_name
-        start_pair_hyponyms = start_word_obj.hyponyms.split(" ")
-        start_pair2 = random.choice(start_pair_hyponyms)
-
-        second_word_obj = self.get_random_word_with_relation_from_db("hyponyms")
-        second_pair1 = second_word_obj.word_name
-        second_pair_hyponyms = second_word_obj.hyponyms.split(" ")
-        second_pair2 = random.choice(second_pair_hyponyms)
-
-        unrelated_words = []
-        while len(unrelated_words) < self.options_num:
-            random_word = self.get_random_word_from_db()
-            if random_word not in start_pair_hyponyms and random_word not in second_pair_hyponyms:
-                unrelated_words.append(random_word)
-
-        options = unrelated_words
-        options.append(second_pair2)
-        random.shuffle(options)
-
-        return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
-
-    def create_meronym_question(self):
-        start_word_obj = self.get_random_word_with_relation_from_db("meronyms")
-        start_pair1 = start_word_obj.word_name
-        start_pair_meronyms = start_word_obj.meronyms.split(" ")
-        start_pair2 = random.choice(start_pair_meronyms)
-
-        second_word_obj = self.get_random_word_with_relation_from_db("meronyms")
-        second_pair1 = second_word_obj.word_name
-        second_pair_meronyms = second_word_obj.meronyms.split(" ")
-        second_pair2 = random.choice(second_pair_meronyms)
-
-        unrelated_words = []
-        while len(unrelated_words) < self.options_num:
-            random_word = self.get_random_word_from_db()
-            if random_word not in start_pair_meronyms and random_word not in second_pair_meronyms:
-                unrelated_words.append(random_word)
-
-        options = unrelated_words
-        options.append(second_pair2)
-        random.shuffle(options)
-
-        return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
-
-    def create_holonym_question(self):
-        start_word_obj = self.get_random_word_with_relation_from_db("holonyms")
-        start_pair1 = start_word_obj.word_name
-        start_pair_holonyms = start_word_obj.holonyms.split(" ")
-        start_pair2 = random.choice(start_pair_holonyms)
-
-        second_word_obj = self.get_random_word_with_relation_from_db("holonyms")
-        second_pair1 = second_word_obj.word_name
-        second_pair_holonyms = second_word_obj.holonyms.split(" ")
-        second_pair2 = random.choice(second_pair_holonyms)
-
-        unrelated_words = []
-        while len(unrelated_words) < self.options_num:
-            random_word = self.get_random_word_from_db()
-            if random_word not in start_pair_holonyms and random_word not in second_pair_holonyms:
-                unrelated_words.append(random_word)
-
-        options = unrelated_words
-        options.append(second_pair2)
-        random.shuffle(options)
-
-        return {"first_pair": [str(start_pair1), str(start_pair2)], "second_word": str(second_pair1), "options": options, "correct_answer": str(second_pair2)}
-
-    def create_entailment_question(self):
-        start_word_obj = self.get_random_word_with_relation_from_db("entailments")
-        start_pair1 = start_word_obj.word_name
-        start_pair_entailments = start_word_obj.entailments.split(" ")
-        start_pair2 = random.choice(start_pair_entailments)
-
-        second_word_obj = self.get_random_word_with_relation_from_db("entailments")
-        second_pair1 = second_word_obj.word_name
-        second_pair_entailments = second_word_obj.entailments.split(" ")
-        second_pair2 = random.choice(second_pair_entailments)
-
-        unrelated_words = []
-        while len(unrelated_words) < self.options_num:
-            random_word = self.get_random_word_from_db()
-            if random_word not in start_pair_entailments and random_word not in second_pair_entailments:
+            if random_word not in start_pair_relateds and random_word not in second_pair_relateds:
                 unrelated_words.append(random_word)
 
         options = unrelated_words
