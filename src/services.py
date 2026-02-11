@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING, Dict, List
 from fastapi import HTTPException
 from sqlalchemy.sql.expression import func
 
-import db.database as _db
-import db.models as _models
-import db.schemas as _schemas
+import src.db.database as _db
+import src.db.models as _models
+import src.db.schemas as _schemas
 
 if TYPE_CHECKING:
     pass
@@ -56,7 +56,7 @@ def get_word_with_given_relation(relation: str) -> _schemas.Word:
     )
     random_word = words_with_relation.order_by(func.random()).first()
     db.close()
-    if random_word == None:
+    if random_word is None:
         raise HTTPException(
             status_code=404, detail=f"No words with {relation} found :("
         )

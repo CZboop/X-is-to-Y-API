@@ -1,6 +1,6 @@
 import sqlalchemy as _sql
 
-import db.database as _db
+import src.db.database as _db
 
 
 class Word(_db.Base):

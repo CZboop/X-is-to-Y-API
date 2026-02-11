@@ -1,15 +1,13 @@
-import nltk
-
-nltk.download("wordnet")
 import random
 from typing import Dict
 
-from nltk.stem import *
-from nltk.stem.porter import *
+import nltk
 
-import db.models as _models
+import src.db.models as _models
 import src.services as _services
 from src.utils import Utils
+
+nltk.download("wordnet")
 
 """
  CREATING QUESTIONS BASED ON SAVED WORD RELATIONS. METHODS CALLED FROM API.
