@@ -4,3 +4,5 @@
 **/.coverage
 /test.csv
 /notes.txt
+**/.ruff_cache
+**/.venv
