@@ -1,14 +1,14 @@
-import unittest, pytest
-from src.utils import Utils
-from pathlib import Path
-import os
-import shutil
+import unittest
+
 import nltk
-nltk.download('wordnet')
+
+from src.utils import Utils
+
+nltk.download("wordnet")
 from nltk.corpus import wordnet as wn
 
-class TestUtils(unittest.TestCase):
 
+class TestUtils(unittest.TestCase):
     maxDiff = None
 
     # == TEST GET RANDOM WORD == #
@@ -72,14 +72,23 @@ class TestUtils(unittest.TestCase):
 
         # then - a list of strings is returned
         self.assertTrue(type(actual_words) == list)
-        self.assertTrue(all([type(i) == nltk.corpus.reader.wordnet.Lemma for i in actual_words]))
+        self.assertTrue(
+            all([type(i) == nltk.corpus.reader.wordnet.Lemma for i in actual_words])
+        )
 
     # == TEST VALIDATE RELATED WORDS == #
     def test_validate_related_words_returns_same_words_if_all_valid(self):
         # given - an instance of the undertest utils class, a word and a list of related words that are all considered valid
         undertest_class = Utils()
         word = "example"
-        original_list = ["specimen", "sample", "illustration", "guide", "blueprint", "ideal"]
+        original_list = [
+            "specimen",
+            "sample",
+            "illustration",
+            "guide",
+            "blueprint",
+            "ideal",
+        ]
 
         # when - we call the validate related words method passing in the word and list of words
         actual_list = undertest_class._validate_related_words(word, original_list)
@@ -87,15 +96,33 @@ class TestUtils(unittest.TestCase):
         # then - the same list of related words is returned
         self.assertEqual(actual_list, original_list)
 
-    def test_validate_related_words_removes_multiple_words_with_underscore_between(self):
+    def test_validate_related_words_removes_multiple_words_with_underscore_between(
+        self,
+    ):
         # given - an instance of the undertest utils class, a word and a list of related words with some invalid due to underscore
         undertest_class = Utils()
         word = "example"
-        original_list = ["specimen", "sample", "illustration", "case_in_point", "role_model", "guide", "blueprint", "ideal"]
+        original_list = [
+            "specimen",
+            "sample",
+            "illustration",
+            "case_in_point",
+            "role_model",
+            "guide",
+            "blueprint",
+            "ideal",
+        ]
 
         # when - we call the validate related words method passing in the word and list of words
         actual_list = undertest_class._validate_related_words(word, original_list)
-        expected_list = ["specimen", "sample", "illustration", "guide", "blueprint", "ideal"]
+        expected_list = [
+            "specimen",
+            "sample",
+            "illustration",
+            "guide",
+            "blueprint",
+            "ideal",
+        ]
 
         # then - the list of related words is returned without the invalid words
         self.assertEqual(actual_list, expected_list)
@@ -104,11 +131,27 @@ class TestUtils(unittest.TestCase):
         # given - an instance of the undertest utils class, a word and a list of related words with some invalid due to numbers
         undertest_class = Utils()
         word = "example"
-        original_list = ["specimen", "100", "sample", "illustration", "eg1","guide", "blueprint", "ideal"]
+        original_list = [
+            "specimen",
+            "100",
+            "sample",
+            "illustration",
+            "eg1",
+            "guide",
+            "blueprint",
+            "ideal",
+        ]
 
         # when - we call the validate related words method passing in the word and list of words
         actual_list = undertest_class._validate_related_words(word, original_list)
-        expected_list = ["specimen", "sample", "illustration", "guide", "blueprint", "ideal"]
+        expected_list = [
+            "specimen",
+            "sample",
+            "illustration",
+            "guide",
+            "blueprint",
+            "ideal",
+        ]
 
         # then - the list of related words is returned without the invalid words
         self.assertEqual(actual_list, expected_list)
@@ -117,27 +160,62 @@ class TestUtils(unittest.TestCase):
         # given - an instance of the utils class, a word and a list of related words with some invalid due to extreme similarity to original word
         undertest_class = Utils()
         word = "example"
-        original_list = ["examples", "specimen", "sample", "exampled", "illustration", "guide", "blueprint", "ideal"]
+        original_list = [
+            "examples",
+            "specimen",
+            "sample",
+            "exampled",
+            "illustration",
+            "guide",
+            "blueprint",
+            "ideal",
+        ]
 
         # when - we call the validate related words method passing in the word and list of words
         actual_list = undertest_class._validate_related_words(word, original_list)
-        expected_list = ["specimen", "sample", "illustration", "guide", "blueprint", "ideal"]
+        expected_list = [
+            "specimen",
+            "sample",
+            "illustration",
+            "guide",
+            "blueprint",
+            "ideal",
+        ]
 
         # then - the list of related words is returned without the invalid words
         self.assertEqual(actual_list, expected_list)
-    
-    def test_validate_related_words_removes_words_that_are_the_same_with_different_caps(self):
+
+    def test_validate_related_words_removes_words_that_are_the_same_with_different_caps(
+        self,
+    ):
         # given - an instance of the utils class, a word and a list of related words with some invalid - differing by caps to original word
         undertest_class = Utils()
         word = "example"
-        original_list = [ "Example", "specimen", "sample", "EXAMPLE", "illustration", "guide", "blueprint", "ideal"]
+        original_list = [
+            "Example",
+            "specimen",
+            "sample",
+            "EXAMPLE",
+            "illustration",
+            "guide",
+            "blueprint",
+            "ideal",
+        ]
 
         # when - we call the validate related words method passing in the word and list of words
         actual_list = undertest_class._validate_related_words(word, original_list)
-        expected_list = ["specimen", "sample", "illustration", "guide", "blueprint", "ideal"]
+        expected_list = [
+            "specimen",
+            "sample",
+            "illustration",
+            "guide",
+            "blueprint",
+            "ideal",
+        ]
 
         # then - the list of related words is returned without the invalid words
         self.assertEqual(actual_list, expected_list)
+
 
 if __name__ == "__main__":
     unittest.main()

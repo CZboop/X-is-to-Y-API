@@ -4,6 +4,6 @@ import sqlalchemy.orm as _orm
 
 DATABASE_URL = "postgresql://postgres:password@localhost/xyapi_database"
 engine = _sql.create_engine(DATABASE_URL)
-SessionLocal = _orm.sessionmaker(autocommit = False, autoflush = False, bind = engine)
+SessionLocal = _orm.sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = _declarative.declarative_base()
