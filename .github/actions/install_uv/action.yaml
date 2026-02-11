@@ -1,0 +1,11 @@
+name: Install uv
+# https://docs.astral.sh/uv/guides/integration/github/
+
+runs:
+  using: composite # https://docs.github.com/en/actions/sharing-automations/creating-actions/creating-a-composite-action
+  steps:
+    - uses: actions/checkout@v4
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: "0.6.14"

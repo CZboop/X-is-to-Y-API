@@ -1,29 +1,60 @@
-name: Build and Test Workflow
+name: "X is to Y API CI"
 
 on:
   push:
-    branches:
-      - "main"
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
 
 jobs:
-  build_and_test:
-    name: Build and test
+    uv_lock:
+        name: uv Lock Sync
+        runs-on: ubuntu-latest
 
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.9"]
+        steps:
+            - uses: actions/checkout@v4
+            - uses: ./.github/actions/install_uv
+            - run: uv lock --locked # check uv lock file in sync with toml
 
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Test with pytest
-        run: |
-          python -m pytest tests/
+    lint:
+        name: Lint with Ruff
+        runs-on: ubuntu-latest
+        needs: [uv_lock] # https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#jobsjob_idneeds
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: ./.github/actions/install_uv
+            - run: uvx ruff check .
+
+    format:
+        name: Format with Ruff
+        runs-on: ubuntu-latest
+        needs: [uv_lock]
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: ./.github/actions/install_uv
+            - run: uvx ruff format --check . # run without --check to reformat
+
+    import_sort:
+        name: Sort imports with isort
+        runs-on: ubuntu-latest
+        needs: [uv_lock]
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: ./.github/actions/install_uv
+            - run: uvx isort .
+
+    type_check:
+        name: Check type hints with mypy
+        runs-on: ubuntu-latest
+        needs: [uv_lock]
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: ./.github/actions/install_uv
+            - run: uvx mypy .
