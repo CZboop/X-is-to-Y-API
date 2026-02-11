@@ -1,10 +1,10 @@
 from fastapi import FastAPI
-from question_maker import QuestionMaker
+from src.question_maker import QuestionMaker
 from typing import Dict
 import random
 from contextlib import asynccontextmanager
-import services as _services
-from relation_writer import RelationWriter
+import src.services as _services
+from src.relation_writer import RelationWriter
 import psycopg2
 import logging
 from sqlalchemy_utils.functions import database_exists, create_database

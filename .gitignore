@@ -1,10 +1,6 @@
 /venv
-/__pycache__
-/.pytest_cache
-/.coverage
+**/__pycache__
+**/.pytest_cache
+**/.coverage
 /test.csv
 /notes.txt
-/tests/__pycache__
-/tests/.pytest_cache
-/tests/.coverage
-/db/__pycache__

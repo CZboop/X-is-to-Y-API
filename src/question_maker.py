@@ -9,8 +9,8 @@ from nltk.stem import *
 from nltk.stem.porter import *
 from fuzzywuzzy import fuzz
 import pandas as pd
-from utils import Utils
-import services as _services
+from src.utils import Utils
+import src.services as _services
 import db.models as _models
 
 '''
